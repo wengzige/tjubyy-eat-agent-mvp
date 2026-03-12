@@ -9,6 +9,8 @@
 4. 输出到 CSV + SQLite
 
 运行方式:
+    # 先在 .env 或系统环境变量中配置：
+    # TENCENT_MAP_API_KEY=你的腾讯地图Key
     python scripts/collect_tencent_poi.py
 
 输出文件:
@@ -20,6 +22,7 @@ from __future__ import annotations
 
 import csv
 import logging
+import os
 import re
 import sqlite3
 from dataclasses import dataclass
@@ -33,7 +36,6 @@ from urllib3.util.retry import Retry
 # =========================
 # Config (easy to edit)
 # =========================
-API_KEY = "TBXBZ-C3F6W-EIIRL-YR4OV-VUIKS-BVFQR"
 CAMPUS_NAME = "电子科技大学清水河校区"
 DEFAULT_RADIUS = 2500
 MAX_PAGES_PER_KEYWORD = 5
@@ -63,6 +65,14 @@ OUTPUT_DIR = Path(__file__).resolve().parent.parent / "outputs"
 CSV_PATH = OUTPUT_DIR / "qingshuihe_restaurants_raw.csv"
 DB_PATH = OUTPUT_DIR / "qingshuihe_restaurants_raw.db"
 DB_TABLE = "restaurants_raw"
+ROOT_DIR = Path(__file__).resolve().parent.parent
+ENV_CANDIDATES = [ROOT_DIR / ".env", ROOT_DIR / "backend" / ".env"]
+
+# 腾讯地图 Key 从环境变量读取，禁止硬编码。
+# 支持：
+# 1) 系统环境变量 TENCENT_MAP_API_KEY
+# 2) 自动读取 .env / backend/.env 里的 TENCENT_MAP_API_KEY
+API_KEY = os.getenv("TENCENT_MAP_API_KEY", "").strip()
 
 # normalized schema
 SCHEMA_FIELDS = [
@@ -135,6 +145,37 @@ def build_http_session() -> requests.Session:
     return session
 
 
+def _load_env_file(path: Path) -> None:
+    if not path.exists():
+        return
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip("\"'").strip()
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+def ensure_api_key_loaded() -> str:
+    api_key = API_KEY
+    if api_key:
+        return api_key
+
+    for env_path in ENV_CANDIDATES:
+        _load_env_file(env_path)
+        api_key = os.getenv("TENCENT_MAP_API_KEY", "").strip()
+        if api_key:
+            logging.info("Loaded TENCENT_MAP_API_KEY from %s", env_path)
+            return api_key
+
+    raise RuntimeError(
+        "TENCENT_MAP_API_KEY 未配置。请在系统环境变量或 .env 文件中设置该值。"
+    )
+
+
 def request_place_search(session: requests.Session, params: Dict[str, Any]) -> Dict[str, Any]:
     """Call Tencent place search API and validate response format."""
     try:
@@ -178,10 +219,10 @@ def pick_campus_center(candidates: List[Dict[str, Any]], campus_name: str) -> Tu
     return float(lat), float(lng)
 
 
-def resolve_campus_coordinate(session: requests.Session, campus_name: str) -> Tuple[float, float]:
+def resolve_campus_coordinate(session: requests.Session, campus_name: str, api_key: str) -> Tuple[float, float]:
     """Resolve campus center using region search in Chengdu."""
     params = {
-        "key": API_KEY,
+        "key": api_key,
         "keyword": campus_name,
         "boundary": "region(成都,0)",
         "page_size": 5,
@@ -263,6 +304,7 @@ def build_dedup_key(record: POIRecord) -> str:
 
 def collect_for_keyword(
     session: requests.Session,
+    api_key: str,
     keyword: str,
     center_lat: float,
     center_lng: float,
@@ -275,7 +317,7 @@ def collect_for_keyword(
 
     for page_index in range(1, max_pages + 1):
         params = {
-            "key": API_KEY,
+            "key": api_key,
             "keyword": keyword,
             "boundary": f"nearby({center_lat},{center_lng},{radius})",
             "orderby": "_distance",
@@ -431,17 +473,17 @@ def main() -> None:
         format="%(asctime)s | %(levelname)s | %(message)s",
     )
 
-    if not API_KEY:
-        raise RuntimeError("API_KEY is empty. Please set your Tencent map key in config section.")
+    api_key = ensure_api_key_loaded()
 
     session = build_http_session()
 
-    center_lat, center_lng = resolve_campus_coordinate(session, CAMPUS_NAME)
+    center_lat, center_lng = resolve_campus_coordinate(session, CAMPUS_NAME, api_key)
 
     all_raw_records: List[POIRecord] = []
     for kw in KEYWORDS:
         records = collect_for_keyword(
             session=session,
+            api_key=api_key,
             keyword=kw,
             center_lat=center_lat,
             center_lng=center_lng,
