@@ -1,6 +1,9 @@
-﻿from fastapi import APIRouter, HTTPException
+﻿from datetime import date
 
-from app.models.schemas import RecommendRequest, RecommendResponse
+from fastapi import APIRouter, HTTPException
+
+from app.models.schemas import HotRankingResponse, RecommendRequest, RecommendResponse
+from app.services.hot_ranking import get_today_hot_rankings
 from app.services.parser import parse_query
 from app.services.recommender import recommend
 from app.services.shop_repository import count_shops
@@ -22,6 +25,16 @@ def filters() -> dict:
         "tastes": ["辣", "清淡"],
         "times": ["早餐", "午餐", "晚餐", "夜宵"],
     }
+
+
+@router.get("/rankings/today", response_model=HotRankingResponse)
+def rankings_today() -> HotRankingResponse:
+    items = get_today_hot_rankings(limit=5)
+    return HotRankingResponse(
+        updated_at=date.today().isoformat(),
+        source="rule-based-db",
+        items=items,
+    )
 
 
 @router.post("/recommend", response_model=RecommendResponse)

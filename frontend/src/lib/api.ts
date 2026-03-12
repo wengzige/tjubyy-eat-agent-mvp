@@ -19,6 +19,22 @@ export type RecommendProxyResponse = {
   finishReason?: string | null;
 };
 
+export type HotRankingItem = {
+  rank: number;
+  shop_id: string;
+  name: string;
+  tag: string;
+  campus: string;
+  avg_price: number;
+  query: string;
+};
+
+export type HotRankingResponse = {
+  updated_at: string;
+  source: string;
+  items: HotRankingItem[];
+};
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 export async function fetchRecommendations(payload: RecommendProxyRequest): Promise<RecommendProxyResponse> {
@@ -33,4 +49,17 @@ export async function fetchRecommendations(payload: RecommendProxyRequest): Prom
   }
 
   return res.json();
+}
+
+export async function fetchTodayHotRanking(): Promise<HotRankingItem[]> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/rankings/today`, {
+    method: "GET",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Ranking request failed: ${res.status}`);
+  }
+
+  const data = (await res.json()) as HotRankingResponse;
+  return data.items || [];
 }

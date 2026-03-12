@@ -51,3 +51,19 @@ class WorkflowRecommendResponse(BaseModel):
     error: Optional[str] = None
     code: Optional[int] = None
     finishReason: Optional[str] = None
+
+
+class HotRankingItem(BaseModel):
+    rank: int
+    shop_id: str
+    name: str
+    tag: str
+    campus: str
+    avg_price: int
+    query: str
+
+
+class HotRankingResponse(BaseModel):
+    updated_at: str
+    source: str
+    items: List[HotRankingItem]

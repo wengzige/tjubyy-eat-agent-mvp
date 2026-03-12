@@ -316,6 +316,12 @@ textarea {
   gap: 7px;
 }
 
+.ranking-loading {
+  margin-top: 8px;
+  color: #7a6b51;
+  font-size: 12px;
+}
+
 .rank-item {
   width: 100%;
   border: 1px solid rgba(180, 145, 83, 0.18);

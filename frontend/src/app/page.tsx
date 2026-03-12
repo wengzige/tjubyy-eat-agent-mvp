@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 
 import { formatAnswerToCards } from "@/lib/answerFormatter";
-import { fetchRecommendations, type HistoryMessage } from "@/lib/api";
+import { fetchRecommendations, fetchTodayHotRanking, type HistoryMessage, type HotRankingItem } from "@/lib/api";
 
 const QUICK_PROMPTS = [
   "清水河附近，预算 25，一个人，想吃清淡一点",
@@ -13,12 +13,12 @@ const QUICK_PROMPTS = [
   "中午赶时间，预算 20 内，离教学楼近一点",
 ];
 
-const CAMPUS_HOT_RANKING = [
-  { name: "李四面馆", tag: "夜宵热门", query: "清水河附近，夜宵想吃面，预算 30 内，有什么推荐？" },
-  { name: "张三盖饭", tag: "一人食首选", query: "一个人吃，想要盖饭，预算 25 左右，推荐下清水河附近的店" },
-  { name: "老成都冒菜", tag: "重口味必点", query: "想吃偏辣重口，预算 35，沙河校区附近有什么好吃的？" },
-  { name: "东北饺子馆", tag: "不辣友好", query: "不太能吃辣，想吃饺子，预算 30 内，推荐下成电附近" },
-  { name: "夜猫烧烤", tag: "聚餐人气王", query: "晚上和同学聚餐想吃烧烤，预算 40 左右，清水河有啥推荐？" },
+const CAMPUS_HOT_RANKING_FALLBACK: HotRankingItem[] = [
+  { rank: 1, shop_id: "fallback-1", name: "李四面馆", tag: "夜宵热门", campus: "清水河", avg_price: 28, query: "清水河附近，夜宵想吃面，预算 30 内，有什么推荐？" },
+  { rank: 2, shop_id: "fallback-2", name: "张三盖饭", tag: "一人食首选", campus: "清水河", avg_price: 23, query: "一个人吃，想要盖饭，预算 25 左右，推荐下清水河附近的店" },
+  { rank: 3, shop_id: "fallback-3", name: "老成都冒菜", tag: "重口味必点", campus: "清水河", avg_price: 34, query: "想吃偏辣重口，预算 35，沙河校区附近有什么好吃的？" },
+  { rank: 4, shop_id: "fallback-4", name: "东北饺子馆", tag: "不辣友好", campus: "清水河", avg_price: 26, query: "不太能吃辣，想吃饺子，预算 30 内，推荐下成电附近" },
+  { rank: 5, shop_id: "fallback-5", name: "夜猫烧烤", tag: "聚餐人气王", campus: "清水河", avg_price: 38, query: "晚上和同学聚餐想吃烧烤，预算 40 左右，清水河有啥推荐？" },
 ];
 
 type QuerySignal = {
@@ -66,6 +66,9 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [rankingOpen, setRankingOpen] = useState(false);
+  const [rankingItems, setRankingItems] = useState<HotRankingItem[]>(CAMPUS_HOT_RANKING_FALLBACK);
+  const [rankingLoaded, setRankingLoaded] = useState(false);
+  const [rankingLoading, setRankingLoading] = useState(false);
   const rankingWrapRef = useRef<HTMLDivElement>(null);
 
   const cards = useMemo(() => formatAnswerToCards(answer), [answer]);
@@ -147,6 +150,33 @@ export default function HomePage() {
     };
   }, [rankingOpen]);
 
+  useEffect(() => {
+    if (!rankingOpen || rankingLoaded || rankingLoading) return;
+    let canceled = false;
+
+    const loadRanking = async () => {
+      try {
+        setRankingLoading(true);
+        const items = await fetchTodayHotRanking();
+        if (!canceled && items.length > 0) {
+          setRankingItems(items);
+          setRankingLoaded(true);
+        }
+      } catch {
+        // Keep fallback ranking silently.
+      } finally {
+        if (!canceled) {
+          setRankingLoading(false);
+        }
+      }
+    };
+
+    void loadRanking();
+    return () => {
+      canceled = true;
+    };
+  }, [rankingOpen, rankingLoaded, rankingLoading]);
+
   return (
     <main className="demo-page">
       <div className="atmo-layer atmo-wash" />
@@ -184,10 +214,11 @@ export default function HomePage() {
                   <h3>今日热门美食榜</h3>
                   <p>看看同学们今天都在吃什么</p>
                 </div>
+                {rankingLoading && <div className="ranking-loading">正在更新今日榜单...</div>}
                 <div className="ranking-list">
-                  {CAMPUS_HOT_RANKING.map((item, idx) => (
+                  {rankingItems.map((item, idx) => (
                     <button
-                      key={item.name}
+                      key={item.shop_id || item.name}
                       type="button"
                       className={`rank-item rank-${idx + 1}`}
                       onClick={() => {
