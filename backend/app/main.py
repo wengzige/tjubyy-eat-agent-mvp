@@ -1,4 +1,5 @@
-﻿from pathlib import Path
+﻿import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -11,12 +12,21 @@ from app.api.routes import router
 load_dotenv(dotenv_path=Path(__file__).resolve().parents[1] / '.env', override=False)
 
 app = FastAPI(title='成电吃什么 Agent API', version='0.1.0')
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+
+# Comma-separated list, e.g.
+# CORS_ALLOW_ORIGINS=https://your-site.netlify.app,http://localhost:3000
+raw_origins = os.getenv('CORS_ALLOW_ORIGINS', '').strip()
+if raw_origins:
+    allow_origins = [item.strip() for item in raw_origins.split(',') if item.strip()]
+else:
+    allow_origins = [
         'http://localhost:3000',
         'http://127.0.0.1:3000',
-    ],
+    ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],
