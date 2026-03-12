@@ -35,6 +35,12 @@ export type HotRankingResponse = {
   items: HotRankingItem[];
 };
 
+export type RankingClickPayload = {
+  shopId: string;
+  shopName?: string;
+  uid?: string;
+};
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 export async function fetchRecommendations(payload: RecommendProxyRequest): Promise<RecommendProxyResponse> {
@@ -62,4 +68,20 @@ export async function fetchTodayHotRanking(): Promise<HotRankingItem[]> {
 
   const data = (await res.json()) as HotRankingResponse;
   return data.items || [];
+}
+
+export async function reportRankingClick(payload: RankingClickPayload): Promise<void> {
+  try {
+    await fetch(`${API_BASE_URL}/api/v1/events/ranking-click`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        shop_id: payload.shopId,
+        shop_name: payload.shopName,
+        uid: payload.uid,
+      }),
+    });
+  } catch {
+    // Non-blocking analytics event.
+  }
 }

@@ -4,7 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 
 import { formatAnswerToCards } from "@/lib/answerFormatter";
-import { fetchRecommendations, fetchTodayHotRanking, type HistoryMessage, type HotRankingItem } from "@/lib/api";
+import {
+  fetchRecommendations,
+  fetchTodayHotRanking,
+  reportRankingClick,
+  type HistoryMessage,
+  type HotRankingItem,
+} from "@/lib/api";
 
 const QUICK_PROMPTS = [
   "清水河附近，预算 25，一个人，想吃清淡一点",
@@ -222,6 +228,11 @@ export default function HomePage() {
                       type="button"
                       className={`rank-item rank-${idx + 1}`}
                       onClick={() => {
+                        void reportRankingClick({
+                          shopId: item.shop_id,
+                          shopName: item.name,
+                          uid,
+                        });
                         setQuery(item.query);
                         setRankingOpen(false);
                       }}

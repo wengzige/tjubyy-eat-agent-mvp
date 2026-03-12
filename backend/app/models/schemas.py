@@ -67,3 +67,13 @@ class HotRankingResponse(BaseModel):
     updated_at: str
     source: str
     items: List[HotRankingItem]
+
+
+class RankingClickEventRequest(BaseModel):
+    shop_id: str = Field(..., min_length=1)
+    shop_name: Optional[str] = None
+    uid: Optional[str] = None
+
+
+class EventAckResponse(BaseModel):
+    ok: bool = True

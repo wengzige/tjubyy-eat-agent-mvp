@@ -20,3 +20,21 @@ CREATE TABLE IF NOT EXISTS recommendation_logs (
   engine TEXT NOT NULL DEFAULT 'rule-based',
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS usage_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_type TEXT NOT NULL, -- query | ranking_click
+  uid TEXT,
+  query_text TEXT,
+  shop_id TEXT,
+  shop_name TEXT,
+  source TEXT DEFAULT 'web',
+  meta_json TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_usage_events_type_time
+  ON usage_events(event_type, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_usage_events_shop_time
+  ON usage_events(shop_id, created_at);

@@ -2,11 +2,18 @@
 
 from fastapi import APIRouter, HTTPException
 
-from app.models.schemas import HotRankingResponse, RecommendRequest, RecommendResponse
+from app.models.schemas import (
+    EventAckResponse,
+    HotRankingResponse,
+    RankingClickEventRequest,
+    RecommendRequest,
+    RecommendResponse,
+)
 from app.services.hot_ranking import get_today_hot_rankings
 from app.services.parser import parse_query
 from app.services.recommender import recommend
 from app.services.shop_repository import count_shops
+from app.services.usage_events import log_query_event, log_ranking_click_event
 
 
 router = APIRouter()
@@ -32,9 +39,20 @@ def rankings_today() -> HotRankingResponse:
     items = get_today_hot_rankings(limit=5)
     return HotRankingResponse(
         updated_at=date.today().isoformat(),
-        source="rule-based-db",
+        source="event-analytics",
         items=items,
     )
+
+
+@router.post("/events/ranking-click", response_model=EventAckResponse)
+def ranking_click_event(req: RankingClickEventRequest) -> EventAckResponse:
+    log_ranking_click_event(
+        shop_id=req.shop_id,
+        shop_name=req.shop_name,
+        uid=req.uid,
+        source="web-ranking",
+    )
+    return EventAckResponse(ok=True)
 
 
 @router.post("/recommend", response_model=RecommendResponse)
@@ -44,6 +62,7 @@ def recommend_api(req: RecommendRequest) -> RecommendResponse:
 
     parsed = parse_query(req.query)
     items = recommend(parsed, req.top_k)
+    log_query_event(req.query, source="rule-recommend")
 
     return RecommendResponse(
         parsed=parsed,
