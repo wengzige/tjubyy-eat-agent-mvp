@@ -81,3 +81,31 @@ class RankingClickEventRequest(BaseModel):
 
 class EventAckResponse(BaseModel):
     ok: bool = True
+
+
+class FeedbackRequest(BaseModel):
+    feedbackType: str = Field(..., pattern="^(new_store|dining_feedback)$")
+    storeName: str = Field(..., min_length=1, max_length=80)
+    area: Optional[str] = Field(default=None, max_length=40)
+    category: Optional[str] = Field(default=None, max_length=40)
+    avgPrice: Optional[int] = Field(default=None, ge=0, le=500)
+    rating: Optional[int] = Field(default=None, ge=1, le=5)
+    sceneTags: List[str] = Field(default_factory=list)
+    tasteTags: List[str] = Field(default_factory=list)
+    featureTags: List[str] = Field(default_factory=list)
+    recommendDish: Optional[str] = Field(default=None, max_length=80)
+    shortIntro: Optional[str] = Field(default=None, max_length=200)
+    recommendReason: Optional[str] = Field(default=None, max_length=200)
+    comment: Optional[str] = Field(default=None, max_length=500)
+    warningNote: Optional[str] = Field(default=None, max_length=200)
+    source: Optional[str] = Field(default="frontend_user_feedback", max_length=60)
+
+
+class FeedbackResponse(BaseModel):
+    ok: bool
+    id: Optional[int] = None
+    message: str
+
+
+class StoreNameSuggestionsResponse(BaseModel):
+    items: List[str]

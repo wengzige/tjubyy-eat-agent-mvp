@@ -1,8 +1,10 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import Image from "next/image";
 
+import { FeedbackPanel } from "@/components/FeedbackPanel";
 import { formatAnswerToCards } from "@/lib/answerFormatter";
 import {
   fetchRecommendations,
@@ -80,18 +82,25 @@ export default function HomePage() {
   const [uid] = useState("demo-user");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [historyExpanded, setHistoryExpanded] = useState(true);
   const [rankingOpen, setRankingOpen] = useState(false);
   const [rankingItems, setRankingItems] = useState<HotRankingItem[]>(CAMPUS_HOT_RANKING_FALLBACK);
   const [rankingLoaded, setRankingLoaded] = useState(false);
   const [rankingLoading, setRankingLoading] = useState(false);
+  const [isComposerFocused, setIsComposerFocused] = useState(false);
+  const [resultTransitionKey, setResultTransitionKey] = useState(0);
   const rankingWrapRef = useRef<HTMLDivElement>(null);
 
   const cards = useMemo(() => formatAnswerToCards(answer), [answer]);
-  const conversation = useMemo(() => history.slice(-10), [history]);
   const querySignals = useMemo(() => signalRule(query), [query]);
   const primaryCard = cards[0];
   const secondaryCards = cards.slice(1, 3);
+  const submitHint = useMemo(() => {
+    if (typeof navigator === "undefined") {
+      return "Enter 发送 · Shift+Enter 换行";
+    }
+    const isMac = /Mac|iPhone|iPad/i.test(navigator.platform);
+    return isMac ? "Enter 发送 · Shift+Enter 换行 · Cmd+Enter 快速发送" : "Enter 发送 · Shift+Enter 换行 · Ctrl+Enter 快速发送";
+  }, []);
 
   const submitQuery = async (nextQuery: string) => {
     const text = nextQuery.trim();
@@ -130,13 +139,6 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const clearConversation = () => {
-    setHistory([]);
-    setAnswer("");
-    setChatId(undefined);
-    setError(null);
   };
 
   const onSubmit = async () => {
@@ -193,8 +195,14 @@ export default function HomePage() {
     };
   }, [rankingOpen, rankingLoaded, rankingLoading]);
 
+  useEffect(() => {
+    if (!answer) return;
+    setResultTransitionKey((prev) => prev + 1);
+  }, [answer]);
+
   return (
     <main className="demo-page">
+      {rankingOpen && <button className="ranking-backdrop" onClick={() => setRankingOpen(false)} aria-label="关闭热门榜面板" />}
       <div className="atmo-layer atmo-wash" />
       <div className="leaf-layer leaf-primary" />
       <div className="leaf-layer leaf-secondary" />
@@ -239,6 +247,7 @@ export default function HomePage() {
                         key={item.shop_id || item.name}
                         type="button"
                         className={`rank-item rank-${idx + 1}`}
+                        style={{ "--rank-delay": `${idx * 45}ms` } as CSSProperties}
                         onClick={() => {
                           void reportRankingClick({
                             shopId: item.shop_id,
@@ -288,28 +297,34 @@ export default function HomePage() {
               <span className="signal-tip">输入后自动识别条件：校区 / 预算 / 场景 / 口味</span>
             )}
           </div>
-          <div className="composer-input-wrap">
+          <div className={`composer-input-wrap ${isComposerFocused ? "is-focused" : ""} ${loading ? "is-loading" : ""}`}>
             <textarea
               className="composer-input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => setIsComposerFocused(true)}
+              onBlur={() => setIsComposerFocused(false)}
               placeholder="例如：预算 30，清水河，2 个人，不太辣，想找晚饭"
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey || !e.shiftKey)) {
                   e.preventDefault();
                   void onSubmit();
                 }
               }}
             />
-            <button className="send-btn" onClick={() => void onSubmit()} disabled={loading || !query.trim()}>
+            <button className="send-btn" onClick={() => void onSubmit()} disabled={loading || !query.trim()} aria-busy={loading}>
               {loading ? "生成中..." : "发送"}
             </button>
+          </div>
+          <div className="composer-foot">
+            <span className="submit-hint">{submitHint}</span>
+            {loading && <span className="submit-feedback">正在理解你的偏好并匹配结果...</span>}
           </div>
           <div className="chip-row">
             {QUICK_PROMPTS.map((item) => (
               <button
                 key={item}
-                className="chip-btn"
+                className={`chip-btn ${query.trim() === item ? "is-active" : ""}`}
                 onClick={() => {
                   setQuery(item);
                   void submitQuery(item);
@@ -373,7 +388,7 @@ export default function HomePage() {
 
             {!loading && answer && primaryCard && (
               <>
-                <div className="result-stack">
+                <div className="result-stack" key={resultTransitionKey}>
                   <article className="result-card result-card-primary">
                     <div className="result-head">
                       <h3>{primaryCard.name}</h3>
@@ -409,7 +424,7 @@ export default function HomePage() {
 
                   <div className="secondary-grid">
                     {secondaryCards.map((card, idx) => (
-                      <article className="result-card result-card-secondary" key={`${card.name}-${idx + 1}`}>
+                      <article className="result-card result-card-secondary" key={`${card.name}-${idx + 1}`} style={{ "--card-delay": `${140 + idx * 70}ms` } as CSSProperties}>
                         <div className="result-head">
                           <h3>{card.name}</h3>
                           <span className="rank-tag">TOP {idx + 2}</span>
@@ -460,32 +475,7 @@ export default function HomePage() {
             )}
           </div>
 
-          <aside className="chat-panel">
-            <div className="chat-head">
-              <h2>最近对话</h2>
-              <div className="chat-actions">
-                <button onClick={() => setHistoryExpanded((v) => !v)}>{historyExpanded ? "收起" : "展开"}</button>
-                <button className="danger" onClick={clearConversation}>
-                  清空
-                </button>
-              </div>
-            </div>
-
-            {conversation.length === 0 ? (
-              <div className="empty-chat">还没有对话记录，先试试上面的示例问题。</div>
-            ) : historyExpanded ? (
-              <div className="chat-list">
-                {conversation.map((item, idx) => (
-                  <div className={`chat-bubble ${item.role}`} key={`${item.role}-${idx}`}>
-                    <span className="chat-role">{item.role === "user" ? "你" : "Agent"}</span>
-                    <p>{item.content}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-chat">对话已折叠，可点击“展开”查看。</div>
-            )}
-          </aside>
+          <FeedbackPanel />
         </section>
       </div>
     </main>

@@ -45,6 +45,32 @@ export type RankingClickPayload = {
   uid?: string;
 };
 
+export type FeedbackType = "new_store" | "dining_feedback";
+
+export type FeedbackPayload = {
+  feedbackType: FeedbackType;
+  storeName: string;
+  area?: string;
+  category?: string;
+  avgPrice?: number;
+  rating?: number;
+  sceneTags?: string[];
+  tasteTags?: string[];
+  featureTags?: string[];
+  recommendDish?: string;
+  shortIntro?: string;
+  recommendReason?: string;
+  comment?: string;
+  warningNote?: string;
+  source?: string;
+};
+
+export type FeedbackResponse = {
+  ok: boolean;
+  id?: number;
+  message: string;
+};
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 export async function fetchRecommendations(payload: RecommendProxyRequest): Promise<RecommendProxyResponse> {
@@ -88,4 +114,30 @@ export async function reportRankingClick(payload: RankingClickPayload): Promise<
   } catch {
     // Non-blocking analytics event.
   }
+}
+
+export async function submitFeedback(payload: FeedbackPayload): Promise<FeedbackResponse> {
+  const res = await fetch(`${API_BASE_URL}/api/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.detail || "反馈提交失败，请稍后重试。");
+  }
+
+  return (await res.json()) as FeedbackResponse;
+}
+
+export async function fetchStoreNameSuggestions(keyword: string): Promise<string[]> {
+  const k = keyword.trim();
+  if (!k) return [];
+  const res = await fetch(`${API_BASE_URL}/api/stores/suggest?keyword=${encodeURIComponent(k)}`, {
+    method: "GET",
+  });
+  if (!res.ok) return [];
+  const data = (await res.json()) as { items?: string[] };
+  return data.items || [];
 }

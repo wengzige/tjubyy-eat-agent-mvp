@@ -3,12 +3,16 @@
 from fastapi import APIRouter, HTTPException
 
 from app.models.schemas import (
+    FeedbackRequest,
+    FeedbackResponse,
     EventAckResponse,
     HotRankingResponse,
     RankingClickEventRequest,
     RecommendRequest,
     RecommendResponse,
+    StoreNameSuggestionsResponse,
 )
+from app.services.feedback_repository import save_feedback, suggest_store_names
 from app.services.hot_ranking import get_today_hot_rankings
 from app.services.parser import parse_query
 from app.services.recommender import recommend
@@ -53,6 +57,43 @@ def ranking_click_event(req: RankingClickEventRequest) -> EventAckResponse:
         source="web-ranking",
     )
     return EventAckResponse(ok=True)
+
+
+@router.get("/stores/suggest", response_model=StoreNameSuggestionsResponse)
+def store_name_suggestions(keyword: str = "") -> StoreNameSuggestionsResponse:
+    if not keyword.strip():
+        return StoreNameSuggestionsResponse(items=[])
+    return StoreNameSuggestionsResponse(items=suggest_store_names(keyword=keyword.strip(), limit=8))
+
+
+@router.post("/feedback", response_model=FeedbackResponse)
+def submit_feedback(req: FeedbackRequest) -> FeedbackResponse:
+    if req.feedbackType == "dining_feedback":
+        if req.rating is None:
+            raise HTTPException(status_code=400, detail="吃后反馈需要评分（1-5）。")
+        if not (req.comment or "").strip():
+            raise HTTPException(status_code=400, detail="吃后反馈需要填写评论内容。")
+
+    feedback_id = save_feedback(
+        {
+            "feedback_type": req.feedbackType,
+            "store_name": req.storeName.strip(),
+            "area": (req.area or "").strip() or None,
+            "category": (req.category or "").strip() or None,
+            "avg_price": req.avgPrice,
+            "rating": req.rating,
+            "scene_tags": ",".join(req.sceneTags) if req.sceneTags else None,
+            "taste_tags": ",".join(req.tasteTags) if req.tasteTags else None,
+            "feature_tags": ",".join(req.featureTags) if req.featureTags else None,
+            "recommend_dish": (req.recommendDish or "").strip() or None,
+            "short_intro": (req.shortIntro or "").strip() or None,
+            "recommend_reason": (req.recommendReason or "").strip() or None,
+            "comment": (req.comment or "").strip() or None,
+            "warning_note": (req.warningNote or "").strip() or None,
+            "source": (req.source or "frontend_user_feedback").strip() or "frontend_user_feedback",
+        }
+    )
+    return FeedbackResponse(ok=True, id=feedback_id, message="反馈提交成功，感谢你共建成电美食地图。")
 
 
 @router.post("/recommend", response_model=RecommendResponse)
