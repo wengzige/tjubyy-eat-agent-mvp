@@ -27,15 +27,24 @@ function splitCandidateBlocks(text: string): string[] {
   if (!normalized) return [];
 
   const byParagraph = normalized.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+  const structuredByParagraph = byParagraph.filter((block) => hasCardSignals(block));
+  if (structuredByParagraph.length >= 1) return structuredByParagraph;
   if (byParagraph.length >= 2) return byParagraph;
 
   const byNumber = normalized
     .split(/\n(?=(?:\d+[.、]|[一二三四五六七八九十]+[、.]))/)
     .map((b) => b.trim())
     .filter(Boolean);
+  const structuredByNumber = byNumber.filter((block) => hasCardSignals(block));
+  if (structuredByNumber.length >= 1) return structuredByNumber;
   if (byNumber.length >= 2) return byNumber;
 
   return [normalized];
+}
+
+function hasCardSignals(block: string): boolean {
+  const matches = block.match(/(店名|推荐理由|推荐菜|适合场景|可能不足)[：:]/g) || [];
+  return matches.length >= 2;
 }
 
 function extractFirstLineName(block: string, index: number): string {
