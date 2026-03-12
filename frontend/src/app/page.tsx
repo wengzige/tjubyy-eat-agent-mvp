@@ -20,12 +20,22 @@ const QUICK_PROMPTS = [
 ];
 
 const CAMPUS_HOT_RANKING_FALLBACK: HotRankingItem[] = [
-  { rank: 1, shop_id: "kw-night", name: "#夜宵", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "清水河附近，夜宵有什么推荐？" },
-  { rank: 2, shop_id: "kw-single", name: "#一个人", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "一个人吃，预算 25 左右，有什么推荐？" },
-  { rank: 3, shop_id: "kw-light", name: "#清淡", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "不辣清淡一点，有哪些推荐？" },
-  { rank: 4, shop_id: "kw-group", name: "#聚餐", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "晚上和同学聚餐，预算 40 左右推荐什么？" },
-  { rank: 5, shop_id: "kw-value", name: "#性价比", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "清水河附近，性价比高的店有哪些？" },
+  { rank: 1, shop_id: "kw-night", name: "#夜宵", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "清水河附近，夜宵有什么推荐？", trend: "flat", delta: 0, today_count: 0, yesterday_count: 0 },
+  { rank: 2, shop_id: "kw-single", name: "#一个人", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "一个人吃，预算 25 左右，有什么推荐？", trend: "flat", delta: 0, today_count: 0, yesterday_count: 0 },
+  { rank: 3, shop_id: "kw-light", name: "#清淡", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "不辣清淡一点，有哪些推荐？", trend: "flat", delta: 0, today_count: 0, yesterday_count: 0 },
+  { rank: 4, shop_id: "kw-group", name: "#聚餐", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "晚上和同学聚餐，预算 40 左右推荐什么？", trend: "flat", delta: 0, today_count: 0, yesterday_count: 0 },
+  { rank: 5, shop_id: "kw-value", name: "#性价比", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "清水河附近，性价比高的店有哪些？", trend: "flat", delta: 0, today_count: 0, yesterday_count: 0 },
 ];
+
+const getTrendMeta = (trend: HotRankingItem["trend"], delta: number) => {
+  if (trend === "up") {
+    return { arrow: "↑", text: `较昨日 +${Math.abs(delta)}`, cls: "up" as const };
+  }
+  if (trend === "down") {
+    return { arrow: "↓", text: `较昨日 -${Math.abs(delta)}`, cls: "down" as const };
+  }
+  return { arrow: "→", text: "较昨日 持平", cls: "flat" as const };
+};
 
 type QuerySignal = {
   label: string;
@@ -222,28 +232,35 @@ export default function HomePage() {
                 </div>
                 {rankingLoading && <div className="ranking-loading">正在更新今日榜单...</div>}
                 <div className="ranking-list">
-                  {rankingItems.map((item, idx) => (
-                    <button
-                      key={item.shop_id || item.name}
-                      type="button"
-                      className={`rank-item rank-${idx + 1}`}
-                      onClick={() => {
-                        void reportRankingClick({
-                          shopId: item.shop_id,
-                          shopName: item.name,
-                          uid,
-                        });
-                        setQuery(item.query);
-                        setRankingOpen(false);
-                      }}
-                    >
-                      <span className="rank-no">{idx + 1}</span>
-                      <span className="rank-main">
-                        <strong>{item.name}</strong>
-                        <em>{item.tag}</em>
-                      </span>
-                    </button>
-                  ))}
+                  {rankingItems.map((item, idx) => {
+                    const trendMeta = getTrendMeta(item.trend, item.delta);
+                    return (
+                      <button
+                        key={item.shop_id || item.name}
+                        type="button"
+                        className={`rank-item rank-${idx + 1}`}
+                        onClick={() => {
+                          void reportRankingClick({
+                            shopId: item.shop_id,
+                            shopName: item.name,
+                            uid,
+                          });
+                          setQuery(item.query);
+                          setRankingOpen(false);
+                        }}
+                      >
+                        <span className="rank-no">{idx + 1}</span>
+                        <span className="rank-main">
+                          <strong>
+                            {item.name}
+                            <span className={`rank-trend rank-trend-${trendMeta.cls}`}>{trendMeta.arrow}</span>
+                          </strong>
+                          <em>{item.tag}</em>
+                          <small className={`rank-trend-text rank-trend-${trendMeta.cls}`}>{trendMeta.text}</small>
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
             </div>

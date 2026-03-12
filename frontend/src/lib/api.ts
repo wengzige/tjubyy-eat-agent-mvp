@@ -27,6 +27,10 @@ export type HotRankingItem = {
   campus: string;
   avg_price: number;
   query: string;
+  trend: "up" | "down" | "flat";
+  delta: number;
+  today_count: number;
+  yesterday_count: number;
 };
 
 export type HotRankingResponse = {

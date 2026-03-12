@@ -61,6 +61,10 @@ class HotRankingItem(BaseModel):
     campus: str
     avg_price: int
     query: str
+    trend: str = "flat"  # up | down | flat
+    delta: int = 0
+    today_count: int = 0
+    yesterday_count: int = 0
 
 
 class HotRankingResponse(BaseModel):
