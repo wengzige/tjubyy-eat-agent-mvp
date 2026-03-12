@@ -20,11 +20,11 @@ const QUICK_PROMPTS = [
 ];
 
 const CAMPUS_HOT_RANKING_FALLBACK: HotRankingItem[] = [
-  { rank: 1, shop_id: "fallback-1", name: "李四面馆", tag: "夜宵热门", campus: "清水河", avg_price: 28, query: "清水河附近，夜宵想吃面，预算 30 内，有什么推荐？" },
-  { rank: 2, shop_id: "fallback-2", name: "张三盖饭", tag: "一人食首选", campus: "清水河", avg_price: 23, query: "一个人吃，想要盖饭，预算 25 左右，推荐下清水河附近的店" },
-  { rank: 3, shop_id: "fallback-3", name: "老成都冒菜", tag: "重口味必点", campus: "清水河", avg_price: 34, query: "想吃偏辣重口，预算 35，沙河校区附近有什么好吃的？" },
-  { rank: 4, shop_id: "fallback-4", name: "东北饺子馆", tag: "不辣友好", campus: "清水河", avg_price: 26, query: "不太能吃辣，想吃饺子，预算 30 内，推荐下成电附近" },
-  { rank: 5, shop_id: "fallback-5", name: "夜猫烧烤", tag: "聚餐人气王", campus: "清水河", avg_price: 38, query: "晚上和同学聚餐想吃烧烤，预算 40 左右，清水河有啥推荐？" },
+  { rank: 1, shop_id: "kw-night", name: "#夜宵", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "清水河附近，夜宵有什么推荐？" },
+  { rank: 2, shop_id: "kw-single", name: "#一个人", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "一个人吃，预算 25 左右，有什么推荐？" },
+  { rank: 3, shop_id: "kw-light", name: "#清淡", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "不辣清淡一点，有哪些推荐？" },
+  { rank: 4, shop_id: "kw-group", name: "#聚餐", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "晚上和同学聚餐，预算 40 左右推荐什么？" },
+  { rank: 5, shop_id: "kw-value", name: "#性价比", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "清水河附近，性价比高的店有哪些？" },
 ];
 
 type QuerySignal = {
