@@ -71,7 +71,24 @@ export type FeedbackResponse = {
   message: string;
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const PROD_API_FALLBACK = "https://chedian-eat-agent-mvp.onrender.com";
+
+function resolveApiBaseUrl(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+  if (fromEnv) return fromEnv;
+
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") {
+      return "http://localhost:8000";
+    }
+  }
+
+  // Safe production fallback when Netlify env var is missing.
+  return PROD_API_FALLBACK;
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 export async function fetchRecommendations(payload: RecommendProxyRequest): Promise<RecommendProxyResponse> {
   const res = await fetch(`${API_BASE_URL}/api/recommend`, {
