@@ -158,8 +158,7 @@ textarea {
   margin: 0;
   padding: 0;
   cursor: default;
-  background: rgba(12, 15, 28, 0.04);
-  backdrop-filter: blur(1.2px);
+  background: rgba(12, 15, 28, 0.02);
 }
 
 .hero-card,
