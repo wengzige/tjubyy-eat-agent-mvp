@@ -89,6 +89,7 @@ export default function HomePage() {
   const [resultTransitionKey, setResultTransitionKey] = useState(0);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const rankingWrapRef = useRef<HTMLDivElement>(null);
+  const rankingLoadRef = useRef<(() => Promise<void>) | null>(null);
 
   const cards = useMemo(() => formatAnswerToCards(answer), [answer]);
   const querySignals = useMemo(() => signalRule(query), [query]);
@@ -197,6 +198,7 @@ export default function HomePage() {
         }
       }
     };
+    rankingLoadRef.current = loadRanking;
 
     void loadRanking();
     const timer = window.setInterval(() => {
@@ -205,6 +207,7 @@ export default function HomePage() {
 
     return () => {
       canceled = true;
+      rankingLoadRef.current = null;
       window.clearInterval(timer);
     };
   }, [rankingOpen]);
@@ -248,8 +251,26 @@ export default function HomePage() {
 
               <section className={`ranking-popover ${rankingOpen ? "open" : ""}`} aria-hidden={!rankingOpen}>
                 <div className="ranking-head">
-                  <h3>今日热门美食榜</h3>
-                  <p>看看同学们今天都在吃什么</p>
+                  <div className="ranking-head-main">
+                    <h3>今日热门美食榜</h3>
+                    <p>看看同学们今天都在吃什么</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="ranking-refresh-btn"
+                    onClick={() => {
+                      if (!rankingLoading) {
+                        void rankingLoadRef.current?.();
+                      }
+                    }}
+                    disabled={rankingLoading}
+                    aria-label="刷新热门榜"
+                  >
+                    <span className={`refresh-icon ${rankingLoading ? "spinning" : ""}`} aria-hidden>
+                      ↻
+                    </span>
+                    刷新
+                  </button>
                 </div>
                 {rankingLoading && <div className="ranking-loading">正在更新今日榜单...</div>}
                 <div className="ranking-list">

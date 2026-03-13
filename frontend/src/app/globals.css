@@ -316,6 +316,53 @@ textarea {
   font-size: 12px;
 }
 
+.ranking-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.ranking-head-main {
+  min-width: 0;
+}
+
+.ranking-refresh-btn {
+  border: 1px solid rgba(170, 132, 68, 0.3);
+  background: rgba(255, 255, 255, 0.72);
+  color: #6f511e;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: transform 0.16s var(--ease-out), box-shadow 0.18s var(--ease-out), border-color 0.18s var(--ease-out);
+}
+
+.ranking-refresh-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(126, 96, 50, 0.16);
+  border-color: rgba(160, 120, 52, 0.45);
+}
+
+.ranking-refresh-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.refresh-icon {
+  display: inline-block;
+  line-height: 1;
+  font-size: 13px;
+}
+
+.refresh-icon.spinning {
+  animation: spin 0.7s linear infinite;
+}
+
 .ranking-list {
   margin-top: 10px;
   display: flex;
