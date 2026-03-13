@@ -74,6 +74,11 @@ const buildHighlight = (reason: string) => {
   return parts[0] || reason;
 };
 
+const displayOrFallback = (value: string, fallback = "未提供") => {
+  const text = (value || "").trim();
+  return text || fallback;
+};
+
 export default function HomePage() {
   const [query, setQuery] = useState("预算30，清水河，晚上和同学想吃辣的");
   const [history, setHistory] = useState<HistoryMessage[]>([]);
@@ -431,9 +436,7 @@ export default function HomePage() {
                     换一批
                   </button>
                 )}
-                {parsedRecommendation.parseError && (
-                  <span className="result-fallback-note">结构化解析失败，已自动切换兼容展示</span>
-                )}
+                {parsedRecommendation.parseError && <span className="result-fallback-note">工作流未返回可解析的 JSON，以下为原始回答</span>}
               </div>
             </div>
 
@@ -485,7 +488,7 @@ export default function HomePage() {
                         <span className="rank-tag champion">BEST MATCH</span>
                       </div>
                     </div>
-                    <p className="primary-highlight">{primaryHighlight}</p>
+                    <p className="primary-highlight">{displayOrFallback(primaryHighlight, "未提供推荐理由")}</p>
                     <div className="tag-list">
                       {primaryCard.tags.map((tag) => (
                         <span className="tag" key={`${primaryCard.name}-${tag}`}>
@@ -497,20 +500,20 @@ export default function HomePage() {
                       {showPrimaryReasonDetail && (
                         <li>
                           <strong>推荐理由</strong>
-                          <p>{primaryCard.reason}</p>
+                        <p>{displayOrFallback(primaryCard.reason, "未提供推荐理由")}</p>
                         </li>
                       )}
                       <li>
                         <strong>推荐菜</strong>
-                        <p>{primaryCard.dishes}</p>
+                        <p>{displayOrFallback(primaryCard.dishes)}</p>
                       </li>
                       <li>
                         <strong>适合场景</strong>
-                        <p>{primaryCard.scene}</p>
+                        <p>{displayOrFallback(primaryCard.scene)}</p>
                       </li>
                       <li>
                         <strong>可能不足</strong>
-                        <p>{primaryCard.downside}</p>
+                        <p>{displayOrFallback(primaryCard.downside)}</p>
                       </li>
                     </ul>
                   </article>
@@ -527,7 +530,7 @@ export default function HomePage() {
                             <span className="rank-tag">TOP {idx + 2}</span>
                           </div>
                         </div>
-                        <p className="secondary-highlight">{buildHighlight(card.reason)}</p>
+                        <p className="secondary-highlight">{displayOrFallback(buildHighlight(card.reason), "未提供推荐理由")}</p>
                         <div className="tag-list">
                           {card.tags.map((tag) => (
                             <span className="tag" key={`${card.name}-${tag}`}>
@@ -538,15 +541,15 @@ export default function HomePage() {
                         <ul className="meta-list compact">
                           <li>
                             <strong>推荐菜</strong>
-                            <p>{card.dishes}</p>
+                            <p>{displayOrFallback(card.dishes)}</p>
                           </li>
                           <li>
                             <strong>适合场景</strong>
-                            <p>{card.scene}</p>
+                            <p>{displayOrFallback(card.scene)}</p>
                           </li>
                           <li>
                             <strong>可能不足</strong>
-                            <p>{card.downside}</p>
+                            <p>{displayOrFallback(card.downside)}</p>
                           </li>
                         </ul>
                       </article>
