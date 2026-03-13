@@ -88,6 +88,7 @@ export default function HomePage() {
   const [rankingLoading, setRankingLoading] = useState(false);
   const [isComposerFocused, setIsComposerFocused] = useState(false);
   const [resultTransitionKey, setResultTransitionKey] = useState(0);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const rankingWrapRef = useRef<HTMLDivElement>(null);
 
   const cards = useMemo(() => formatAnswerToCards(answer), [answer]);
@@ -157,6 +158,7 @@ export default function HomePage() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setRankingOpen(false);
+        setFeedbackOpen(false);
       }
     };
 
@@ -167,6 +169,15 @@ export default function HomePage() {
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [rankingOpen]);
+
+  useEffect(() => {
+    if (!feedbackOpen) return;
+    const original = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, [feedbackOpen]);
 
   useEffect(() => {
     if (!rankingOpen || rankingLoaded || rankingLoading) return;
@@ -318,7 +329,17 @@ export default function HomePage() {
           </div>
           <div className="composer-foot">
             <span className="submit-hint">{submitHint}</span>
-            {loading && <span className="submit-feedback">正在理解你的偏好并匹配结果...</span>}
+            <div className="composer-foot-actions">
+              {loading && <span className="submit-feedback">正在理解你的偏好并匹配结果...</span>}
+              <button
+                type="button"
+                className="feedback-entry-btn"
+                onClick={() => setFeedbackOpen(true)}
+              >
+                <span aria-hidden>✦</span>
+                反馈新店 / 用餐体验
+              </button>
+            </div>
           </div>
           <div className="chip-row">
             {QUICK_PROMPTS.map((item) => (
@@ -345,7 +366,7 @@ export default function HomePage() {
         )}
 
         <section className="content-grid">
-          <div className="results-panel">
+          <div className="results-panel results-panel-full">
             <div className="section-head">
               <h2>推荐结果</h2>
               <span>{loading ? "正在为你匹配最优选项..." : "优先展示最匹配选项，其次给你备选"}</span>
@@ -474,8 +495,39 @@ export default function HomePage() {
               </section>
             )}
           </div>
+        </section>
+      </div>
 
-          <FeedbackPanel />
+      <div
+        className={`feedback-modal ${feedbackOpen ? "open" : ""}`}
+        aria-hidden={!feedbackOpen}
+        onClick={() => setFeedbackOpen(false)}
+      >
+        <div className="feedback-modal-scrim" />
+        <section
+          className="feedback-modal-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-label="校园美食反馈"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="feedback-modal-head">
+            <div>
+              <h3>校园美食共创</h3>
+              <p>帮助更新校园美食地图，让推荐更懂同学口味。</p>
+            </div>
+            <button
+              type="button"
+              className="feedback-modal-close"
+              aria-label="关闭反馈面板"
+              onClick={() => setFeedbackOpen(false)}
+            >
+              ×
+            </button>
+          </div>
+          <div className="feedback-modal-body">
+            <FeedbackPanel showHeader={false} />
+          </div>
         </section>
       </div>
     </main>

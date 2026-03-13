@@ -21,7 +21,11 @@ const toggleTag = (list: string[], value: string) => {
   return [...list, value];
 };
 
-export function FeedbackPanel() {
+type FeedbackPanelProps = {
+  showHeader?: boolean;
+};
+
+export function FeedbackPanel({ showHeader = true }: FeedbackPanelProps) {
   const [mode, setMode] = useState<Mode>("new_store");
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
@@ -157,10 +161,12 @@ export function FeedbackPanel() {
 
   return (
     <aside className="feedback-panel" aria-live="polite">
-      <div className="feedback-head">
-        <h2>校园美食共创</h2>
-        <p>你的一次反馈，会让下一位同学吃得更好。</p>
-      </div>
+      {showHeader && (
+        <div className="feedback-head">
+          <h2>校园美食共创</h2>
+          <p>你的一次反馈，会让下一位同学吃得更好。</p>
+        </div>
+      )}
 
       <div className="feedback-tabs" role="tablist" aria-label="反馈类型">
         <button
