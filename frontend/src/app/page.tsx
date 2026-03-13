@@ -84,7 +84,6 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [rankingOpen, setRankingOpen] = useState(false);
   const [rankingItems, setRankingItems] = useState<HotRankingItem[]>(CAMPUS_HOT_RANKING_FALLBACK);
-  const [rankingLoaded, setRankingLoaded] = useState(false);
   const [rankingLoading, setRankingLoading] = useState(false);
   const [isComposerFocused, setIsComposerFocused] = useState(false);
   const [resultTransitionKey, setResultTransitionKey] = useState(0);
@@ -180,7 +179,7 @@ export default function HomePage() {
   }, [feedbackOpen]);
 
   useEffect(() => {
-    if (!rankingOpen || rankingLoaded || rankingLoading) return;
+    if (!rankingOpen) return;
     let canceled = false;
 
     const loadRanking = async () => {
@@ -189,7 +188,6 @@ export default function HomePage() {
         const items = await fetchTodayHotRanking();
         if (!canceled && items.length > 0) {
           setRankingItems(items);
-          setRankingLoaded(true);
         }
       } catch {
         // Keep fallback ranking silently.
@@ -201,10 +199,15 @@ export default function HomePage() {
     };
 
     void loadRanking();
+    const timer = window.setInterval(() => {
+      void loadRanking();
+    }, 45_000);
+
     return () => {
       canceled = true;
+      window.clearInterval(timer);
     };
-  }, [rankingOpen, rankingLoaded, rankingLoading]);
+  }, [rankingOpen]);
 
   useEffect(() => {
     if (!answer) return;
