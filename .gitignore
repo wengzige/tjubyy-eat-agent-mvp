@@ -1,9 +1,35 @@
-﻿# Python
+# Python
 __pycache__/
 *.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .venv/
-.env
+venv/
 *.db
+*.sqlite
+*.sqlite3
+
+# Secrets / local config
+.env
+.env.*
+!.env.example
+!.env.local.example
+.envrc
+.direnv/
+.npmrc
+.pypirc
+.netrc
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+*.p8
+*.jks
+*.keystore
+*.mobileprovision
 
 # Node
 node_modules/
@@ -13,4 +39,3 @@ out/
 # OS
 .DS_Store
 Thumbs.db
-backend/.env
