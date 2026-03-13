@@ -6,7 +6,7 @@ from app.main import app
 client = TestClient(app)
 
 
-def test_proxy_recommend_falls_back_to_rule_based_answer_when_workflow_unstructured(monkeypatch) -> None:
+def test_proxy_recommend_passthrough_when_workflow_unstructured(monkeypatch) -> None:
     monkeypatch.setattr(
         "app.api.proxy_routes.ask_workflow",
         lambda **kwargs: {
@@ -29,27 +29,27 @@ def test_proxy_recommend_falls_back_to_rule_based_answer_when_workflow_unstructu
     assert resp.status_code == 200
     body = resp.json()
     assert body["ok"] is True
-    assert body["finishReason"] == "fallback-rule-based"
-    assert "店名：" in body["answer"]
-    assert "推荐理由：" in body["answer"]
-    assert body["raw"]["fallback"]["engine"] == "rule-based"
+    assert body["finishReason"] == "stop"
+    assert body["answer"] == "This is an unstructured natural-language response."
+    assert body["raw"]["source"] == "workflow"
 
 
-def test_proxy_recommend_keeps_workflow_answer_when_card_friendly(monkeypatch) -> None:
+def test_proxy_recommend_passthrough_when_card_friendly(monkeypatch) -> None:
+    workflow_answer = "\n".join(
+        [
+            "1. 川香阁",
+            "店名：川香阁",
+            "推荐理由：离你近，口味匹配。",
+            "推荐菜：冒菜",
+            "适合场景：一个人晚饭",
+            "可能不足：高峰期排队。",
+        ]
+    )
     monkeypatch.setattr(
         "app.api.proxy_routes.ask_workflow",
         lambda **kwargs: {
             "ok": True,
-            "answer": "\n".join(
-                [
-                    "1. 川香阁",
-                    "店名：川香阁",
-                    "推荐理由：离你近，口味匹配。",
-                    "推荐菜：冒菜",
-                    "适合场景：一个人晚饭",
-                    "可能不足：高峰期排队。",
-                ]
-            ),
+            "answer": workflow_answer,
             "finishReason": "stop",
             "raw": {"source": "workflow"},
         },
@@ -68,20 +68,21 @@ def test_proxy_recommend_keeps_workflow_answer_when_card_friendly(monkeypatch) -
     body = resp.json()
     assert body["ok"] is True
     assert body["finishReason"] == "stop"
-    assert body["answer"].startswith("1. 川香阁")
+    assert body["answer"] == workflow_answer
     assert body["raw"]["source"] == "workflow"
 
 
-def test_proxy_recommend_keeps_workflow_answer_when_structured_json(monkeypatch) -> None:
+def test_proxy_recommend_passthrough_when_structured_json(monkeypatch) -> None:
+    workflow_answer = (
+        '{"query":"test","summary":"s","batch_size":3,"total_count":6,'
+        '"recommendations":[{"name":"A","score":92,"reason":"r",'
+        '"recommend_dish":"d","scene_fit":"晚餐","warning":"w"}]}'
+    )
     monkeypatch.setattr(
         "app.api.proxy_routes.ask_workflow",
         lambda **kwargs: {
             "ok": True,
-            "answer": (
-                '{"query":"test","summary":"s","batch_size":3,"total_count":6,'
-                '"recommendations":[{"name":"A","score":92,"reason":"r",'
-                '"recommend_dish":"d","scene_fit":"晚餐","warning":"w"}]}'
-            ),
+            "answer": workflow_answer,
             "finishReason": "stop",
             "raw": {"source": "workflow"},
         },
@@ -100,5 +101,5 @@ def test_proxy_recommend_keeps_workflow_answer_when_structured_json(monkeypatch)
     body = resp.json()
     assert body["ok"] is True
     assert body["finishReason"] == "stop"
-    assert body["answer"].startswith('{"query":"test"')
+    assert body["answer"] == workflow_answer
     assert body["raw"]["source"] == "workflow"

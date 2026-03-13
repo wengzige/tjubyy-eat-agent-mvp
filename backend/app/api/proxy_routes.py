@@ -8,13 +8,6 @@ from app.models.schemas import (
     WorkflowRecommendResponse,
 )
 from app.services.feedback_repository import save_feedback, suggest_store_names
-from app.services.parser import parse_query
-from app.services.recommendation_response_builder import (
-    build_rule_based_answer,
-    is_card_friendly_answer,
-    is_structured_json_answer,
-)
-from app.services.recommender import recommend
 from app.services.usage_events import log_query_event
 from app.services.xfyun_workflow_service import ask_workflow
 
@@ -31,30 +24,7 @@ def recommend_via_workflow(req: WorkflowRecommendRequest) -> WorkflowRecommendRe
         chat_id=req.chatId,
         history=[item.model_dump() for item in req.history],
     )
-
-    if workflow_result.get("ok") and (
-        is_card_friendly_answer(workflow_result.get("answer"))
-        or is_structured_json_answer(workflow_result.get("answer"))
-    ):
-        return WorkflowRecommendResponse(**workflow_result)
-
-    parsed = parse_query(req.query)
-    fallback_items = recommend(parsed, top_k=3)
-    fallback_answer = build_rule_based_answer(parsed, fallback_items)
-
-    return WorkflowRecommendResponse(
-        ok=True,
-        answer=fallback_answer,
-        finishReason="fallback-rule-based",
-        raw={
-            "workflow": workflow_result,
-            "fallback": {
-                "engine": "rule-based",
-                "parsed": parsed.model_dump(),
-                "returned": len(fallback_items),
-            },
-        },
-    )
+    return WorkflowRecommendResponse(**workflow_result)
 
 
 @proxy_router.get("/stores/suggest", response_model=StoreNameSuggestionsResponse)

@@ -74,12 +74,6 @@ const buildHighlight = (reason: string) => {
   return parts[0] || reason;
 };
 
-type RecommendationRawPayload = {
-  workflow?: {
-    answer?: string;
-  };
-};
-
 export default function HomePage() {
   const [query, setQuery] = useState("预算30，清水河，晚上和同学想吃辣的");
   const [history, setHistory] = useState<HistoryMessage[]>([]);
@@ -148,16 +142,7 @@ export default function HomePage() {
         return;
       }
 
-      const primaryAnswer = (res.answer || "").trim();
-      const rawPayload = ((res.raw as RecommendationRawPayload | undefined) || {}) as RecommendationRawPayload;
-      const workflowAnswer = (rawPayload.workflow?.answer || "").trim();
-
-      const primaryParsed = parseAnswerToRecommendationResult(primaryAnswer);
-      const workflowParsed = workflowAnswer ? parseAnswerToRecommendationResult(workflowAnswer) : null;
-      const shouldPreferWorkflowStructured =
-        primaryParsed.mode !== "structured" && workflowParsed?.mode === "structured";
-
-      const nextAnswer = shouldPreferWorkflowStructured ? workflowAnswer : primaryAnswer;
+      const nextAnswer = (res.answer || "").trim();
       setAnswer(nextAnswer);
       setCurrentBatchIndex(0);
       setHistory((prev) => [
