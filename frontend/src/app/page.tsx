@@ -95,6 +95,13 @@ export default function HomePage() {
   const querySignals = useMemo(() => signalRule(query), [query]);
   const primaryCard = cards[0];
   const secondaryCards = cards.slice(1, 3);
+  const primaryHighlight = useMemo(() => buildHighlight(primaryCard?.reason || ""), [primaryCard]);
+  const showPrimaryReasonDetail = useMemo(() => {
+    if (!primaryCard) return false;
+    const compactReason = primaryCard.reason.replace(/[。.!！?？；;\s]+/g, "");
+    const compactHighlight = primaryHighlight.replace(/[。.!！?？；;\s]+/g, "");
+    return compactReason !== compactHighlight;
+  }, [primaryCard, primaryHighlight]);
   const submitHint = useMemo(() => {
     if (typeof navigator === "undefined") {
       return "Enter 发送 · Shift+Enter 换行";
@@ -438,7 +445,7 @@ export default function HomePage() {
                       <h3>{primaryCard.name}</h3>
                       <span className="rank-tag champion">BEST MATCH</span>
                     </div>
-                    <p className="primary-highlight">{buildHighlight(primaryCard.reason)}</p>
+                    <p className="primary-highlight">{primaryHighlight}</p>
                     <div className="tag-list">
                       {primaryCard.tags.map((tag) => (
                         <span className="tag" key={`${primaryCard.name}-${tag}`}>
@@ -447,10 +454,12 @@ export default function HomePage() {
                       ))}
                     </div>
                     <ul className="meta-list">
-                      <li>
-                        <strong>推荐理由</strong>
-                        <p>{primaryCard.reason}</p>
-                      </li>
+                      {showPrimaryReasonDetail && (
+                        <li>
+                          <strong>推荐理由</strong>
+                          <p>{primaryCard.reason}</p>
+                        </li>
+                      )}
                       <li>
                         <strong>推荐菜</strong>
                         <p>{primaryCard.dishes}</p>
