@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Iterable
 
 from app.models.schemas import ParsedSlots, ShopResult
@@ -15,6 +16,51 @@ def is_card_friendly_answer(answer: str | None) -> bool:
 
     matched_labels = sum(1 for label in CARD_LABELS if f"{label}：" in text or f"{label}:" in text)
     return matched_labels >= 3
+
+
+def is_structured_json_answer(answer: str | None) -> bool:
+    text = (answer or "").strip()
+    if not text:
+        return False
+
+    candidate = _extract_json_candidate(text)
+    if not candidate:
+        return False
+
+    try:
+        parsed = json.loads(candidate)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return False
+
+    if not isinstance(parsed, dict):
+        return False
+
+    recommendations = parsed.get("recommendations")
+    if not isinstance(recommendations, list):
+        return False
+
+    expected_keys = {"name", "score", "reason", "recommend_dish", "scene_fit", "warning"}
+    for item in recommendations:
+        if isinstance(item, dict) and expected_keys.intersection(item.keys()):
+            return True
+    return False
+
+
+def _extract_json_candidate(text: str) -> str | None:
+    if text.startswith("{") and text.endswith("}"):
+        return text
+
+    if "```" in text:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start >= 0 and end > start:
+            return text[start : end + 1]
+
+    first = text.find("{")
+    last = text.rfind("}")
+    if first >= 0 and last > first:
+        return text[first : last + 1]
+    return None
 
 
 def build_rule_based_answer(slots: ParsedSlots, items: Iterable[ShopResult]) -> str:
