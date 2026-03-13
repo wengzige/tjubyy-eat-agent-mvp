@@ -6,11 +6,16 @@ export type LocationAlias = {
 };
 
 export const siteConfig = {
-  agentName: "天大吃什么",
+  agentName: "TJUer校园餐饮助手 🍜",
   schoolName: "天津大学",
   shortSchoolName: "TJU",
   campusLabel: "北洋园 / 卫津路",
-  heroDescription: "你的校园吃饭决策助手，帮你在预算、口味、距离和场景之间更快做出选择。",
+  heroBadgeLabel: "天津大学北洋园校区餐饮信息服务",
+  heroSealLabel: "北洋园校区 · 校园生活服务",
+  heroSealTitle: "天津大学校园餐饮推荐平台",
+  heroSealDescription: "服务北洋园与卫津路校区的日常就餐选择、热门发现与信息共建。",
+  heroHighlights: ["北洋园 / 卫津路", "校内热门榜单", "校园美食共创"],
+  heroDescription: "面向天津大学师生的校园餐饮信息入口，帮助你更快找到合适的餐厅、窗口和周边选择。",
   defaultQuery: "预算30，北洋园，晚上和同学想吃辣的",
   quickPrompts: [
     "北洋园附近，预算 25，一个人，想吃清淡一点",
@@ -32,8 +37,8 @@ export const siteConfig = {
   inputPlaceholder: "例如：预算 30，北洋园，2 个人，不太辣，想找晚饭",
   signalTip: "输入后自动识别条件：校区 / 预算 / 场景 / 口味",
   readyTitle: "准备就绪",
-  readyDescription: "输入你的需求，系统会结合北洋园校内外候选店铺给出推荐，并整理成可展示卡片。",
-  feedbackIntro: "帮助更新北洋园美食地图，让推荐更懂天大学生口味。",
+  readyDescription: "输入你的需求，系统会结合校内外候选餐饮信息，整理为清晰的推荐卡片。",
+  feedbackIntro: "帮助补充北洋园餐饮信息，让推荐结果更贴近日常就餐场景。",
   feedbackAreaPlaceholder: "学一 / 学五 / 南门 / 校外",
   newStorePlaceholder: "例如：北洋园新开的砂锅店",
   diningStorePlaceholder: "例如：北洋园牛肉面",

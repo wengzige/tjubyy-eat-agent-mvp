@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+
 import { FeedbackPanel } from "@/components/FeedbackPanel";
 import { parseAnswerToRecommendationResult } from "@/lib/answerFormatter";
 import {
@@ -70,11 +71,13 @@ const displayOrFallback = (value: string, fallback = "未提供") => {
 };
 
 export default function HomePage() {
+  const crestSrc = "/image/tju-provided-seal.png";
   const [query, setQuery] = useState(siteConfig.defaultQuery);
   const [history, setHistory] = useState<HistoryMessage[]>([]);
   const [answer, setAnswer] = useState("");
   const [chatId, setChatId] = useState<string | undefined>(undefined);
   const [uid] = useState("demo-user");
+  const [crestAvailable, setCrestAvailable] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rankingOpen, setRankingOpen] = useState(false);
@@ -242,91 +245,131 @@ export default function HomePage() {
 
       <div className="demo-shell">
         <section className="hero-card">
-          <div className="hero-top">
-            <div className="hero-badge">Campus AI Food Agent</div>
-            <div className="emblem-widget" ref={rankingWrapRef}>
-              <button
-                type="button"
-                className="school-badge school-badge-btn"
-                aria-label={`${siteConfig.schoolName}校徽`}
-                aria-expanded={rankingOpen}
-                onClick={() => setRankingOpen((v) => !v)}
-              >
-                <span className="school-badge-icon school-badge-monogram">{siteConfig.shortSchoolName}</span>
-                <span className="school-badge-text">
-                  <b>{siteConfig.shortSchoolName}</b>
-                  <em>{siteConfig.schoolName}</em>
-                </span>
-                <span className={`badge-caret ${rankingOpen ? "open" : ""}`} aria-hidden>
-                  ▾
-                </span>
-              </button>
-
-              <section className={`ranking-popover ${rankingOpen ? "open" : ""}`} aria-hidden={!rankingOpen}>
-                <div className="ranking-head">
-                  <div className="ranking-head-main">
-                    <h3>今日热门美食榜</h3>
-                    <p>看看同学们今天都在吃什么</p>
-                  </div>
+          <div className="hero-grid">
+            <div className="hero-copy">
+              <div className="hero-top">
+                <div className="hero-badge">{siteConfig.heroBadgeLabel}</div>
+                <div className="emblem-widget" ref={rankingWrapRef}>
                   <button
                     type="button"
-                    className="ranking-refresh-btn"
-                    onClick={() => {
-                      if (!rankingLoading) {
-                        void rankingLoadRef.current?.();
-                      }
-                    }}
-                    disabled={rankingLoading}
-                    aria-label="刷新热门榜"
+                    className="school-badge school-badge-btn"
+                    aria-label={`${siteConfig.schoolName}校徽`}
+                    aria-expanded={rankingOpen}
+                    onClick={() => setRankingOpen((v) => !v)}
                   >
-                    <span className={`refresh-icon ${rankingLoading ? "spinning" : ""}`} aria-hidden>
-                      ↻
-                    </span>
-                    刷新
-                  </button>
-                </div>
-                {rankingLoading && <div className="ranking-loading">正在更新今日榜单...</div>}
-                <div className="ranking-list">
-                  {rankingItems.map((item, idx) => {
-                    const trendMeta = getTrendMeta(item.trend, item.delta);
-                    return (
-                      <button
-                        key={item.shop_id || item.name}
-                        type="button"
-                        className={`rank-item rank-${idx + 1}`}
-                        style={{ "--rank-delay": `${idx * 45}ms` } as CSSProperties}
-                        onClick={() => {
-                          void reportRankingClick({
-                            shopId: item.shop_id,
-                            shopName: item.name,
-                            uid,
-                          });
-                          setQuery(item.query);
-                          setRankingOpen(false);
-                        }}
-                      >
-                        <span className="rank-no">{idx + 1}</span>
-                        <span className="rank-main">
-                          <strong>
-                            {item.name}
-                            <span className={`rank-trend rank-trend-${trendMeta.cls}`}>{trendMeta.arrow}</span>
-                          </strong>
-                          <em>{item.tag}</em>
-                          <small className={`rank-trend-text rank-trend-${trendMeta.cls}`}>{trendMeta.text}</small>
+                    <span className="school-badge-icon">
+                      {crestAvailable ? (
+                        <img
+                          src={crestSrc}
+                          alt={`${siteConfig.schoolName}校徽`}
+                          className="school-badge-logo"
+                          onError={() => setCrestAvailable(false)}
+                        />
+                      ) : (
+                        <span className="school-badge-fallback" aria-hidden>
+                          天
                         </span>
+                      )}
+                    </span>
+                    <span className="school-badge-text">
+                      <b>{siteConfig.shortSchoolName}</b>
+                      <em>{siteConfig.schoolName}</em>
+                    </span>
+                    <span className={`badge-caret ${rankingOpen ? "open" : ""}`} aria-hidden>
+                      ▾
+                    </span>
+                  </button>
+
+                  <section className={`ranking-popover ${rankingOpen ? "open" : ""}`} aria-hidden={!rankingOpen}>
+                    <div className="ranking-head">
+                      <div className="ranking-head-main">
+                        <h3>校园热门榜</h3>
+                        <p>基于近期查询与点击热度整理</p>
+                      </div>
+                      <button
+                        type="button"
+                        className="ranking-refresh-btn"
+                        onClick={() => {
+                          if (!rankingLoading) {
+                            void rankingLoadRef.current?.();
+                          }
+                        }}
+                        disabled={rankingLoading}
+                        aria-label="刷新热门榜"
+                      >
+                        <span className={`refresh-icon ${rankingLoading ? "spinning" : ""}`} aria-hidden>
+                          ↻
+                        </span>
+                        刷新
                       </button>
-                    );
-                  })}
+                    </div>
+                    {rankingLoading && <div className="ranking-loading">正在更新今日榜单...</div>}
+                    <div className="ranking-list">
+                      {rankingItems.map((item, idx) => {
+                        const trendMeta = getTrendMeta(item.trend, item.delta);
+                        return (
+                          <button
+                            key={item.shop_id || item.name}
+                            type="button"
+                            className={`rank-item rank-${idx + 1}`}
+                            style={{ "--rank-delay": `${idx * 45}ms` } as CSSProperties}
+                            onClick={() => {
+                              void reportRankingClick({
+                                shopId: item.shop_id,
+                                shopName: item.name,
+                                uid,
+                              });
+                              setQuery(item.query);
+                              setRankingOpen(false);
+                            }}
+                          >
+                            <span className="rank-no">{idx + 1}</span>
+                            <span className="rank-main">
+                              <strong>
+                                {item.name}
+                                <span className={`rank-trend rank-trend-${trendMeta.cls}`}>{trendMeta.arrow}</span>
+                              </strong>
+                              <em>{item.tag}</em>
+                              <small className={`rank-trend-text rank-trend-${trendMeta.cls}`}>{trendMeta.text}</small>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
                 </div>
-              </section>
+              </div>
+
+              <h1>{siteConfig.agentName}</h1>
+              <p>{siteConfig.heroDescription}</p>
+              <div className="hero-stats">
+                {siteConfig.heroHighlights.map((item) => (
+                  <span className="hero-stat" key={item}>
+                    {item}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
-          <h1>{siteConfig.agentName}</h1>
-          <p>{siteConfig.heroDescription}</p>
-          <div className="hero-stats">
-            <span>{siteConfig.campusLabel}</span>
-            <span>多轮会话推荐</span>
-            <span>结构化卡片展示</span>
+
+            <aside className="hero-crest-panel" aria-label="天津大学校徽展示">
+              <div className="hero-crest-ring">
+                {crestAvailable ? (
+                  <img
+                    src={crestSrc}
+                    alt={`${siteConfig.schoolName}校徽`}
+                    className="hero-crest-image"
+                    onError={() => setCrestAvailable(false)}
+                  />
+                ) : (
+                  <div className="hero-crest-placeholder">请放入天津大学校徽 PNG</div>
+                )}
+              </div>
+              <div className="hero-crest-caption">
+                <span className="hero-crest-label">{siteConfig.heroSealLabel}</span>
+                <strong>{siteConfig.heroSealTitle}</strong>
+                <p>{siteConfig.heroSealDescription}</p>
+              </div>
+            </aside>
           </div>
         </section>
 
@@ -373,7 +416,7 @@ export default function HomePage() {
                 onClick={() => setFeedbackOpen(true)}
               >
                 <span aria-hidden>✦</span>
-                反馈新店 / 用餐体验
+                信息补充 / 用餐反馈
               </button>
             </div>
           </div>
@@ -424,7 +467,6 @@ export default function HomePage() {
                     换一批
                   </button>
                 )}
-                {parsedRecommendation.parseError && <span className="result-fallback-note">工作流未返回可解析的 JSON，以下为原始回答</span>}
               </div>
             </div>
 
@@ -470,10 +512,7 @@ export default function HomePage() {
                     <div className="result-head">
                       <h3>{primaryCard.name}</h3>
                       <div className="result-head-right">
-                        {typeof primaryCard.score === "number" && (
-                          <span className="score-chip">{primaryCard.score}% 匹配</span>
-                        )}
-                        <span className="rank-tag champion">BEST MATCH</span>
+                        <span className="rank-tag champion">优先推荐</span>
                       </div>
                     </div>
                     <p className="primary-highlight">{displayOrFallback(primaryHighlight, "未提供推荐理由")}</p>
@@ -488,7 +527,7 @@ export default function HomePage() {
                       {showPrimaryReasonDetail && (
                         <li>
                           <strong>推荐理由</strong>
-                        <p>{displayOrFallback(primaryCard.reason, "未提供推荐理由")}</p>
+                          <p>{displayOrFallback(primaryCard.reason, "未提供推荐理由")}</p>
                         </li>
                       )}
                       <li>
@@ -512,10 +551,7 @@ export default function HomePage() {
                         <div className="result-head">
                           <h3>{card.name}</h3>
                           <div className="result-head-right">
-                            {typeof card.score === "number" && (
-                              <span className="score-chip">{card.score}% 匹配</span>
-                            )}
-                            <span className="rank-tag">TOP {idx + 2}</span>
+                            <span className="rank-tag">备选 {idx + 2}</span>
                           </div>
                         </div>
                         <p className="secondary-highlight">{displayOrFallback(buildHighlight(card.reason), "未提供推荐理由")}</p>
@@ -545,21 +581,13 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <details className="raw-answer">
-                  <summary>查看模型原始回答</summary>
-                  <pre>{answer}</pre>
-                </details>
               </>
             )}
 
             {!loading && answer && !primaryCard && (
               <section className="state-card">
-                <h3>已返回结果</h3>
-                <p>当前回答暂时无法结构化为店铺卡片，请展开原始回答查看完整内容。</p>
-                <details className="raw-answer">
-                  <summary>查看模型原始回答</summary>
-                  <pre>{answer}</pre>
-                </details>
+                <h3>结果整理中</h3>
+                <p>当前返回内容暂未整理为推荐卡片，建议换一种更具体的问法后再试。</p>
               </section>
             )}
           </div>

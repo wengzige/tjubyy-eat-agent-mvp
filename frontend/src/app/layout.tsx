@@ -4,8 +4,12 @@ import type { Metadata } from "next";
 import { siteConfig } from "@/lib/siteConfig";
 
 export const metadata: Metadata = {
-  title: `${siteConfig.agentName} Agent`,
-  description: `${siteConfig.schoolName}校园餐饮推荐 MVP`,
+  title: `${siteConfig.agentName} | ${siteConfig.schoolName}`,
+  description: `${siteConfig.schoolName}${siteConfig.campusLabel}校园餐饮信息服务`,
+  icons: {
+    icon: "/image/tju-provided-seal.png",
+    apple: "/image/tju-provided-seal.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
