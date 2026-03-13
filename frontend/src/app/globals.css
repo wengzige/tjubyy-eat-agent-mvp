@@ -150,17 +150,6 @@ textarea {
   gap: 20px;
 }
 
-.ranking-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  border: 0;
-  margin: 0;
-  padding: 0;
-  cursor: default;
-  background: rgba(12, 15, 28, 0.02);
-}
-
 .hero-card,
 .composer-card,
 .state-card,

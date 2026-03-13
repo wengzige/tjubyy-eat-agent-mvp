@@ -213,7 +213,6 @@ export default function HomePage() {
 
   return (
     <main className="demo-page">
-      {rankingOpen && <button className="ranking-backdrop" onClick={() => setRankingOpen(false)} aria-label="关闭热门榜面板" />}
       <div className="atmo-layer atmo-wash" />
       <div className="leaf-layer leaf-primary" />
       <div className="leaf-layer leaf-secondary" />
