@@ -83,6 +83,25 @@ def _build_payload(
     return payload
 
 
+def _is_retryable_request_error(exc: httpx.RequestError) -> bool:
+    # 公网链路下 TLS EOF / 连接中断是典型瞬时错误，允许自动重试。
+    if isinstance(exc, (httpx.ConnectError, httpx.ReadError, httpx.WriteError, httpx.RemoteProtocolError)):
+        return True
+
+    message = str(exc).lower()
+    retryable_markers = (
+        "unexpected_eof_while_reading",
+        "eof occurred in violation of protocol",
+        "connection reset",
+        "connection aborted",
+        "broken pipe",
+        "temporarily unavailable",
+        "tls",
+        "ssl",
+    )
+    return any(marker in message for marker in retryable_markers)
+
+
 def ask_workflow(
     query: str,
     uid: Optional[str] = None,
@@ -129,11 +148,13 @@ def ask_workflow(
 
     resp: Optional[httpx.Response] = None
     timeout_error: Optional[str] = None
+    last_request_error: Optional[str] = None
     for attempt in range(max_retries + 1):
         try:
-            with httpx.Client(timeout=timeout_seconds) as client:
+            with httpx.Client(timeout=timeout_seconds, trust_env=False, http2=False) as client:
                 resp = client.post(endpoint, headers=headers, json=payload)
             timeout_error = None
+            last_request_error = None
             break
         except httpx.ReadTimeout:
             timeout_error = f"讯飞工作流响应超时（>{timeout_seconds}s），请稍后重试。"
@@ -141,9 +162,13 @@ def ask_workflow(
                 time.sleep(0.4 * (attempt + 1))
                 continue
         except httpx.RequestError as exc:
+            last_request_error = f"请求讯飞工作流失败: {exc}"
+            if attempt < max_retries and _is_retryable_request_error(exc):
+                time.sleep(0.4 * (attempt + 1))
+                continue
             return {
                 "ok": False,
-                "error": f"请求讯飞工作流失败: {exc}",
+                "error": last_request_error,
                 "code": None,
                 "raw": None,
             }
@@ -151,7 +176,7 @@ def ask_workflow(
     if resp is None:
         return {
             "ok": False,
-            "error": timeout_error or "请求讯飞工作流失败。",
+            "error": timeout_error or last_request_error or "请求讯飞工作流失败。",
             "code": 20804,
             "raw": None,
         }
