@@ -1,10 +1,28 @@
-﻿export type RecommendationCardData = {
+export type RecommendationCardData = {
   name: string;
   reason: string;
   dishes: string;
   scene: string;
   downside: string;
   tags: string[];
+  score?: number;
+};
+
+type StructuredRecommendationPayload = {
+  query?: string;
+  summary?: string;
+  batch_size?: number;
+  total_count?: number;
+  recommendations?: Array<Record<string, unknown>>;
+};
+
+export type ParsedRecommendationResult = {
+  mode: "structured" | "legacy" | "empty";
+  summary?: string;
+  batchSize: number;
+  totalCount: number;
+  cards: RecommendationCardData[];
+  parseError?: string;
 };
 
 const FIELD_PATTERNS = {
@@ -20,6 +38,11 @@ function normalizeBlock(block: string): string {
     .replace(/\r/g, "")
     .replace(/[•*]/g, "-")
     .trim();
+}
+
+function hasCardSignals(block: string): boolean {
+  const matches = block.match(/(店名|推荐理由|推荐菜|适合场景|可能不足)[：:]/g) || [];
+  return matches.length >= 2;
 }
 
 function splitCandidateBlocks(text: string): string[] {
@@ -40,11 +63,6 @@ function splitCandidateBlocks(text: string): string[] {
   if (byNumber.length >= 2) return byNumber;
 
   return [normalized];
-}
-
-function hasCardSignals(block: string): boolean {
-  const matches = block.match(/(店名|推荐理由|推荐菜|适合场景|可能不足)[：:]/g) || [];
-  return matches.length >= 2;
 }
 
 function extractFirstLineName(block: string, index: number): string {
@@ -94,7 +112,125 @@ function parseBlock(block: string, index: number): RecommendationCardData {
   return card;
 }
 
+function normalizeScore(raw: unknown): number | undefined {
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    return Math.max(0, Math.min(100, Math.round(raw)));
+  }
+
+  if (typeof raw === "string") {
+    const value = Number(raw.replace("%", "").trim());
+    if (Number.isFinite(value)) {
+      return Math.max(0, Math.min(100, Math.round(value)));
+    }
+  }
+
+  return undefined;
+}
+
+function toStructuredCards(payload: StructuredRecommendationPayload): RecommendationCardData[] {
+  const rawItems = Array.isArray(payload.recommendations) ? payload.recommendations : [];
+  return rawItems
+    .map((item, idx) => {
+      const name = String(item.name || "").trim();
+      const reason = String(item.reason || "").trim();
+      const dishes = String(item.recommend_dish || "").trim();
+      const scene = String(item.scene_fit || "").trim();
+      const downside = String(item.warning || "").trim();
+      const score = normalizeScore(item.score);
+
+      if (!name && !reason && !dishes && !scene && !downside) {
+        return null;
+      }
+
+      const card: RecommendationCardData = {
+        name: name || `推荐 ${idx + 1}`,
+        reason: reason || "综合匹配度较高。",
+        dishes: dishes || "可根据当天口味选择店内招牌。",
+        scene: scene || "适合日常校园就餐。",
+        downside: downside || "高峰时段可能需要排队。",
+        tags: [],
+        score,
+      };
+      card.tags = collectTags(card);
+      return card;
+    })
+    .filter((item): item is RecommendationCardData => Boolean(item));
+}
+
+function extractJsonCandidate(answer: string): string | null {
+  const trimmed = answer.trim();
+  if (!trimmed) return null;
+
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenceMatch?.[1]) {
+    return fenceMatch[1].trim();
+  }
+
+  if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+    return trimmed;
+  }
+
+  const firstBrace = trimmed.indexOf("{");
+  const lastBrace = trimmed.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return trimmed.slice(firstBrace, lastBrace + 1);
+  }
+
+  return null;
+}
+
 export function formatAnswerToCards(answer: string): RecommendationCardData[] {
   const blocks = splitCandidateBlocks(answer).slice(0, 4);
   return blocks.map((b, i) => parseBlock(b, i));
+}
+
+export function parseAnswerToRecommendationResult(answer: string): ParsedRecommendationResult {
+  const text = (answer || "").trim();
+  if (!text) {
+    return {
+      mode: "empty",
+      batchSize: 3,
+      totalCount: 0,
+      cards: [],
+    };
+  }
+
+  const jsonCandidate = extractJsonCandidate(text);
+  if (jsonCandidate) {
+    try {
+      const parsed = JSON.parse(jsonCandidate) as StructuredRecommendationPayload;
+      const cards = toStructuredCards(parsed);
+      if (cards.length > 0) {
+        const batchSizeRaw = Number(parsed.batch_size);
+        const batchSize = Number.isFinite(batchSizeRaw) && batchSizeRaw > 0 ? Math.floor(batchSizeRaw) : 3;
+        const totalCountRaw = Number(parsed.total_count);
+        const totalCount = Number.isFinite(totalCountRaw) && totalCountRaw > 0 ? Math.floor(totalCountRaw) : cards.length;
+        const summary = String(parsed.summary || "").trim();
+        return {
+          mode: "structured",
+          summary: summary || undefined,
+          batchSize,
+          totalCount,
+          cards,
+        };
+      }
+    } catch {
+      const legacyCards = formatAnswerToCards(text);
+      return {
+        mode: legacyCards.length ? "legacy" : "empty",
+        batchSize: 3,
+        totalCount: legacyCards.length,
+        cards: legacyCards,
+        parseError: "JSON parse failed",
+      };
+    }
+  }
+
+  const legacyCards = formatAnswerToCards(text);
+  return {
+    mode: legacyCards.length ? "legacy" : "empty",
+    batchSize: 3,
+    totalCount: legacyCards.length,
+    cards: legacyCards,
+  };
 }

@@ -1,11 +1,11 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import Image from "next/image";
 
 import { FeedbackPanel } from "@/components/FeedbackPanel";
-import { formatAnswerToCards } from "@/lib/answerFormatter";
+import { parseAnswerToRecommendationResult } from "@/lib/answerFormatter";
 import {
   fetchRecommendations,
   fetchTodayHotRanking,
@@ -87,14 +87,26 @@ export default function HomePage() {
   const [rankingLoading, setRankingLoading] = useState(false);
   const [isComposerFocused, setIsComposerFocused] = useState(false);
   const [resultTransitionKey, setResultTransitionKey] = useState(0);
+  const [currentBatchIndex, setCurrentBatchIndex] = useState(0);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const rankingWrapRef = useRef<HTMLDivElement>(null);
   const rankingLoadRef = useRef<(() => Promise<void>) | null>(null);
 
-  const cards = useMemo(() => formatAnswerToCards(answer), [answer]);
+  const parsedRecommendation = useMemo(() => parseAnswerToRecommendationResult(answer), [answer]);
+  const cards = parsedRecommendation.cards;
+  const isStructured = parsedRecommendation.mode === "structured";
+  const batchSize = isStructured ? Math.max(1, parsedRecommendation.batchSize) : 3;
+  const batchCount = isStructured ? Math.max(1, Math.ceil(cards.length / batchSize)) : 1;
+  const normalizedBatchIndex = batchCount > 0 ? currentBatchIndex % batchCount : 0;
+  const visibleCards = useMemo(() => {
+    if (!cards.length) return [];
+    if (!isStructured) return cards.slice(0, 3);
+    const start = normalizedBatchIndex * batchSize;
+    return cards.slice(start, start + batchSize);
+  }, [cards, isStructured, normalizedBatchIndex, batchSize]);
   const querySignals = useMemo(() => signalRule(query), [query]);
-  const primaryCard = cards[0];
-  const secondaryCards = cards.slice(1, 3);
+  const primaryCard = visibleCards[0];
+  const secondaryCards = visibleCards.slice(1, 3);
   const primaryHighlight = useMemo(() => buildHighlight(primaryCard?.reason || ""), [primaryCard]);
   const showPrimaryReasonDetail = useMemo(() => {
     if (!primaryCard) return false;
@@ -132,6 +144,7 @@ export default function HomePage() {
 
       const nextAnswer = res.answer || "";
       setAnswer(nextAnswer);
+      setCurrentBatchIndex(0);
       setHistory((prev) => [
         ...prev,
         { role: "user", content: text },
@@ -222,7 +235,7 @@ export default function HomePage() {
   useEffect(() => {
     if (!answer) return;
     setResultTransitionKey((prev) => prev + 1);
-  }, [answer]);
+  }, [answer, normalizedBatchIndex]);
 
   return (
     <main className="demo-page">
@@ -399,7 +412,29 @@ export default function HomePage() {
           <div className="results-panel results-panel-full">
             <div className="section-head">
               <h2>推荐结果</h2>
-              <span>{loading ? "正在为你匹配最优选项..." : "优先展示最匹配选项，其次给你备选"}</span>
+              <div className="result-actions">
+                <span>
+                  {loading
+                    ? "正在为你匹配最优选项..."
+                    : parsedRecommendation.summary || "优先展示最匹配选项，其次给你备选"}
+                </span>
+                {isStructured && cards.length > batchSize && (
+                  <button
+                    type="button"
+                    className="refresh-batch-btn"
+                    onClick={() => {
+                      startTransition(() => {
+                        setCurrentBatchIndex((prev) => (prev + 1) % batchCount);
+                      });
+                    }}
+                  >
+                    换一批
+                  </button>
+                )}
+                {parsedRecommendation.parseError && (
+                  <span className="result-fallback-note">结构化解析失败，已自动切换兼容展示</span>
+                )}
+              </div>
             </div>
 
             {loading && (
@@ -443,7 +478,12 @@ export default function HomePage() {
                   <article className="result-card result-card-primary">
                     <div className="result-head">
                       <h3>{primaryCard.name}</h3>
-                      <span className="rank-tag champion">BEST MATCH</span>
+                      <div className="result-head-right">
+                        {typeof primaryCard.score === "number" && (
+                          <span className="score-chip">{primaryCard.score}% 匹配</span>
+                        )}
+                        <span className="rank-tag champion">BEST MATCH</span>
+                      </div>
                     </div>
                     <p className="primary-highlight">{primaryHighlight}</p>
                     <div className="tag-list">
@@ -480,7 +520,12 @@ export default function HomePage() {
                       <article className="result-card result-card-secondary" key={`${card.name}-${idx + 1}`} style={{ "--card-delay": `${140 + idx * 70}ms` } as CSSProperties}>
                         <div className="result-head">
                           <h3>{card.name}</h3>
-                          <span className="rank-tag">TOP {idx + 2}</span>
+                          <div className="result-head-right">
+                            {typeof card.score === "number" && (
+                              <span className="score-chip">{card.score}% 匹配</span>
+                            )}
+                            <span className="rank-tag">TOP {idx + 2}</span>
+                          </div>
                         </div>
                         <p className="secondary-highlight">{buildHighlight(card.reason)}</p>
                         <div className="tag-list">
