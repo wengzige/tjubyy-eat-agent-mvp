@@ -1,11 +1,12 @@
-﻿from datetime import date
+from datetime import date
 
 from fastapi import APIRouter, HTTPException
 
+from app.core.campus_config import CAMPUS_PROFILE
 from app.models.schemas import (
+    EventAckResponse,
     FeedbackRequest,
     FeedbackResponse,
-    EventAckResponse,
     HotRankingResponse,
     RankingClickEventRequest,
     RecommendRequest,
@@ -31,10 +32,10 @@ def health() -> dict:
 @router.get("/filters")
 def filters() -> dict:
     return {
-        "locations": ["清水河", "沙河"],
-        "scenes": ["一个人", "同学聚餐"],
-        "tastes": ["辣", "清淡"],
-        "times": ["早餐", "午餐", "晚餐", "夜宵"],
+        "locations": list(CAMPUS_PROFILE.supported_locations),
+        "scenes": list(CAMPUS_PROFILE.scene_labels),
+        "tastes": list(CAMPUS_PROFILE.taste_labels),
+        "times": list(CAMPUS_PROFILE.time_labels),
     }
 
 
@@ -93,7 +94,7 @@ def submit_feedback(req: FeedbackRequest) -> FeedbackResponse:
             "source": (req.source or "frontend_user_feedback").strip() or "frontend_user_feedback",
         }
     )
-    return FeedbackResponse(ok=True, id=feedback_id, message="反馈提交成功，感谢你共建成电美食地图。")
+    return FeedbackResponse(ok=True, id=feedback_id, message=CAMPUS_PROFILE.feedback_success_message)
 
 
 @router.post("/recommend", response_model=RecommendResponse)

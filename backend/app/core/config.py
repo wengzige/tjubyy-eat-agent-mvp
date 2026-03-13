@@ -1,10 +1,10 @@
-﻿from pydantic import BaseModel
+from pydantic import BaseModel
 
 
 class Settings(BaseModel):
-    app_name: str = "chedian-eat-agent-backend"
+    app_name: str = "tju-beiyangyuan-eat-agent-backend"
     app_env: str = "dev"
-    engine: str = "rule-based"
+    engine: str = "tencent-hunyuan-hybrid"
 
 
 settings = Settings()

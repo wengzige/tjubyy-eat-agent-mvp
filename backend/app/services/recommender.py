@@ -72,7 +72,6 @@ def _budget_fit_score(shop: Dict, slots: ParsedSlots) -> float:
         over = avg_price - budget
         return max(0.0, 1.0 - over / budget)
 
-    # In-budget candidates: closer to budget gets a little higher utility.
     return max(0.0, min(1.0, avg_price / budget))
 
 
@@ -119,20 +118,20 @@ def _build_reason(shop: Dict, slots: ParsedSlots, components: Dict[str, float], 
     parts = []
 
     if slots.budget_max is not None and int(shop["avg_price"]) <= slots.budget_max:
-        parts.append("预算内")
+        parts.append(f"人均 {shop['avg_price']} 元，在预算内")
     if slots.location and slots.location in shop.get("campus", ""):
-        parts.append(f"位于{slots.location}")
+        parts.append(f"位置匹配 {slots.location}")
     if slots.taste and slots.taste in shop.get("tastes", ""):
-        parts.append(f"口味匹配{slots.taste}")
+        parts.append(f"口味偏向 {slots.taste}")
     if components.get("scene", 0) > 0 and slots.scene:
-        parts.append(f"适合{slots.scene}")
+        parts.append(f"适合 {slots.scene}")
     if components.get("time", 0) >= time_match_min and slots.time:
         parts.append(f"{slots.time}时段营业匹配")
 
     if not parts:
-        parts.append("综合评分较高")
+        parts.append("综合匹配度较高")
 
-    return "，".join(parts) + "。"
+    return "；".join(parts) + "。"
 
 
 def recommend(slots: ParsedSlots, top_k: int = 3) -> List[ShopResult]:
@@ -146,12 +145,6 @@ def recommend(slots: ParsedSlots, top_k: int = 3) -> List[ShopResult]:
         score, components = _score_shop(shop, slots, config, slot_ranges)
         ranked.append((score, int(components["matched_fields"]), int(shop["avg_price"]), shop, components))
 
-    # Stable tie-break:
-    # 1) higher score
-    # 2) more matched fields
-    # 3) closer to user's budget
-    # 4) lower price
-    # 5) stable by shop id
     if slots.budget_max is not None:
         ranked.sort(
             key=lambda x: (

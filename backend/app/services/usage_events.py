@@ -7,6 +7,8 @@ import sqlite3
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from app.services.shop_repository import ensure_database
+
 BASE_DIR = Path(__file__).resolve().parents[2]
 DB_PATH = Path(os.getenv("SQLITE_DB_PATH", str(BASE_DIR / "data" / "chedian.db")))
 
@@ -28,6 +30,7 @@ def log_usage_event(
     meta: Optional[Dict[str, Any]] = None,
 ) -> None:
     try:
+        ensure_database()
         with _connect() as conn:
             conn.execute(
                 """
@@ -73,6 +76,7 @@ def log_ranking_click_event(
 
 
 def fetch_recent_usage_events(days: int = 7) -> List[Dict[str, Any]]:
+    ensure_database()
     with _connect() as conn:
         rows = conn.execute(
             """

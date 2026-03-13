@@ -65,7 +65,7 @@ function extractJsonCandidate(answer: string): string | null {
 function splitTagsFromCard(card: RecommendationCardData): string[] {
   const source = `${card.scene} ${card.dishes} ${card.reason}`.toLowerCase();
   const tags: string[] = [];
-  if (source.includes("一人") || source.includes("一个人")) tags.push("一人食");
+  if (source.includes("一个人") || source.includes("一人食")) tags.push("一人食");
   if (source.includes("夜宵")) tags.push("夜宵");
   if (source.includes("性价比") || source.includes("预算")) tags.push("性价比");
   if (source.includes("辣")) tags.push("辣味");

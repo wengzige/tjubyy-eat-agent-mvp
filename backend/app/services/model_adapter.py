@@ -1,20 +1,20 @@
-﻿from typing import Optional
+from typing import Optional
 
 
-class XunfeiModelAdapter:
+class GenericModelAdapter:
     """
-    讯飞模型接入预留。
-    后续在此实现真实 API 调用，并返回结构化槽位或排序信号。
+    通用模型接入预留。
+    当前项目已在 tencent_hunyuan_service.py 中实现腾讯混元调用；
+    如果后续要切换供应商，可以在这里继续抽象公共接口。
     """
 
-    def __init__(self, api_key: Optional[str] = None, api_secret: Optional[str] = None):
-        self.api_key = api_key
-        self.api_secret = api_secret
+    def __init__(self, provider: Optional[str] = None):
+        self.provider = provider or "tencent-hunyuan"
 
     def parse_or_rank(self, query: str) -> dict:
-        # TODO: 接入讯飞星火模型/大模型 API
         return {
             "enabled": False,
-            "message": "Xunfei adapter placeholder",
+            "provider": self.provider,
+            "message": "Generic model adapter placeholder",
             "query": query,
         }

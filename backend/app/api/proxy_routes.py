@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
+from app.core.campus_config import CAMPUS_PROFILE
 from app.models.schemas import (
     FeedbackRequest,
     FeedbackResponse,
@@ -8,23 +9,23 @@ from app.models.schemas import (
     WorkflowRecommendResponse,
 )
 from app.services.feedback_repository import save_feedback, suggest_store_names
+from app.services.tencent_hunyuan_service import generate_recommendation_response
 from app.services.usage_events import log_query_event
-from app.services.xfyun_workflow_service import ask_workflow
 
 
 proxy_router = APIRouter()
 
 
 @proxy_router.post("/recommend", response_model=WorkflowRecommendResponse)
-def recommend_via_workflow(req: WorkflowRecommendRequest) -> WorkflowRecommendResponse:
-    log_query_event(req.query, uid=req.uid, source="workflow-recommend")
-    workflow_result = ask_workflow(
+def recommend_via_model(req: WorkflowRecommendRequest) -> WorkflowRecommendResponse:
+    log_query_event(req.query, uid=req.uid, source="tencent-hunyuan-hybrid")
+    result = generate_recommendation_response(
         query=req.query,
         uid=req.uid,
         chat_id=req.chatId,
         history=[item.model_dump() for item in req.history],
     )
-    return WorkflowRecommendResponse(**workflow_result)
+    return WorkflowRecommendResponse(**result)
 
 
 @proxy_router.get("/stores/suggest", response_model=StoreNameSuggestionsResponse)
@@ -61,4 +62,4 @@ def submit_feedback_proxy(req: FeedbackRequest) -> FeedbackResponse:
             "source": (req.source or "frontend_user_feedback").strip() or "frontend_user_feedback",
         }
     )
-    return FeedbackResponse(ok=True, id=feedback_id, message="反馈提交成功，感谢你共建成电美食地图。")
+    return FeedbackResponse(ok=True, id=feedback_id, message=CAMPUS_PROFILE.feedback_success_message)

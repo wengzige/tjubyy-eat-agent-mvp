@@ -2,8 +2,6 @@
 
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import Image from "next/image";
-
 import { FeedbackPanel } from "@/components/FeedbackPanel";
 import { parseAnswerToRecommendationResult } from "@/lib/answerFormatter";
 import {
@@ -13,21 +11,11 @@ import {
   type HistoryMessage,
   type HotRankingItem,
 } from "@/lib/api";
+import { siteConfig } from "@/lib/siteConfig";
 
-const QUICK_PROMPTS = [
-  "清水河附近，预算 25，一个人，想吃清淡一点",
-  "沙河校区，晚上和室友聚餐，预算 35，想吃辣",
-  "现在在清水河，夜宵有什么性价比高的推荐？",
-  "中午赶时间，预算 20 内，离教学楼近一点",
-];
+const QUICK_PROMPTS = siteConfig.quickPrompts;
 
-const CAMPUS_HOT_RANKING_FALLBACK: HotRankingItem[] = [
-  { rank: 1, shop_id: "kw-night", name: "#夜宵", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "清水河附近，夜宵有什么推荐？", trend: "flat", delta: 0, today_count: 0, yesterday_count: 0 },
-  { rank: 2, shop_id: "kw-single", name: "#一个人", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "一个人吃，预算 25 左右，有什么推荐？", trend: "flat", delta: 0, today_count: 0, yesterday_count: 0 },
-  { rank: 3, shop_id: "kw-light", name: "#清淡", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "不辣清淡一点，有哪些推荐？", trend: "flat", delta: 0, today_count: 0, yesterday_count: 0 },
-  { rank: 4, shop_id: "kw-group", name: "#聚餐", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "晚上和同学聚餐，预算 40 左右推荐什么？", trend: "flat", delta: 0, today_count: 0, yesterday_count: 0 },
-  { rank: 5, shop_id: "kw-value", name: "#性价比", tag: "等待更多搜索数据", campus: "", avg_price: 0, query: "清水河附近，性价比高的店有哪些？", trend: "flat", delta: 0, today_count: 0, yesterday_count: 0 },
-];
+const CAMPUS_HOT_RANKING_FALLBACK: HotRankingItem[] = siteConfig.hotRankingFallback;
 
 const getTrendMeta = (trend: HotRankingItem["trend"], delta: number) => {
   if (trend === "up") {
@@ -49,8 +37,10 @@ const signalRule = (query: string): QuerySignal[] => {
   const text = query.trim();
   if (!text) return signals;
 
-  if (text.includes("清水河")) signals.push({ label: "校区", value: "清水河" });
-  else if (text.includes("沙河")) signals.push({ label: "校区", value: "沙河" });
+  const matchedLocation = siteConfig.locationAliases.find((item) => item.keywords.some((keyword) => text.includes(keyword)));
+  if (matchedLocation) {
+    signals.push({ label: "校区", value: matchedLocation.value });
+  }
 
   const budgetMatch = text.match(/预算\s*([0-9]{1,3})/);
   if (budgetMatch?.[1]) signals.push({ label: "预算", value: `¥${budgetMatch[1]}以内` });
@@ -80,7 +70,7 @@ const displayOrFallback = (value: string, fallback = "未提供") => {
 };
 
 export default function HomePage() {
-  const [query, setQuery] = useState("预算30，清水河，晚上和同学想吃辣的");
+  const [query, setQuery] = useState(siteConfig.defaultQuery);
   const [history, setHistory] = useState<HistoryMessage[]>([]);
   const [answer, setAnswer] = useState("");
   const [chatId, setChatId] = useState<string | undefined>(undefined);
@@ -258,16 +248,14 @@ export default function HomePage() {
               <button
                 type="button"
                 className="school-badge school-badge-btn"
-                aria-label="电子科技大学校徽"
+                aria-label={`${siteConfig.schoolName}校徽`}
                 aria-expanded={rankingOpen}
                 onClick={() => setRankingOpen((v) => !v)}
               >
-                <span className="school-badge-icon">
-                  <Image src="/image/xiaohui.png" alt="UESTC Emblem" width={36} height={36} priority />
-                </span>
+                <span className="school-badge-icon school-badge-monogram">{siteConfig.shortSchoolName}</span>
                 <span className="school-badge-text">
-                  <b>UESTC</b>
-                  <em>电子科技大学</em>
+                  <b>{siteConfig.shortSchoolName}</b>
+                  <em>{siteConfig.schoolName}</em>
                 </span>
                 <span className={`badge-caret ${rankingOpen ? "open" : ""}`} aria-hidden>
                   ▾
@@ -333,10 +321,10 @@ export default function HomePage() {
               </section>
             </div>
           </div>
-          <h1>成电吃什么</h1>
-          <p>你的校园吃饭决策助手，帮你在预算、口味、距离和场景之间快速做出更优选择。</p>
+          <h1>{siteConfig.agentName}</h1>
+          <p>{siteConfig.heroDescription}</p>
           <div className="hero-stats">
-            <span>清水河 / 沙河</span>
+            <span>{siteConfig.campusLabel}</span>
             <span>多轮会话推荐</span>
             <span>结构化卡片展示</span>
           </div>
@@ -353,7 +341,7 @@ export default function HomePage() {
                 </span>
               ))
             ) : (
-              <span className="signal-tip">输入后自动识别条件：校区 / 预算 / 场景 / 口味</span>
+              <span className="signal-tip">{siteConfig.signalTip}</span>
             )}
           </div>
           <div className={`composer-input-wrap ${isComposerFocused ? "is-focused" : ""} ${loading ? "is-loading" : ""}`}>
@@ -363,7 +351,7 @@ export default function HomePage() {
               onChange={(e) => setQuery(e.target.value)}
               onFocus={() => setIsComposerFocused(true)}
               onBlur={() => setIsComposerFocused(false)}
-              placeholder="例如：预算 30，清水河，2 个人，不太辣，想找晚饭"
+              placeholder={siteConfig.inputPlaceholder}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey || !e.shiftKey)) {
                   e.preventDefault();
@@ -470,8 +458,8 @@ export default function HomePage() {
 
             {!loading && !answer && !error && (
               <section className="state-card">
-                <h3>准备就绪</h3>
-                <p>输入你的需求，系统会给出适合校园场景的推荐，并自动整理成可展示卡片。</p>
+                <h3>{siteConfig.readyTitle}</h3>
+                <p>{siteConfig.readyDescription}</p>
               </section>
             )}
 
@@ -594,7 +582,7 @@ export default function HomePage() {
           <div className="feedback-modal-head">
             <div>
               <h3>校园美食共创</h3>
-              <p>帮助更新校园美食地图，让推荐更懂同学口味。</p>
+              <p>{siteConfig.feedbackIntro}</p>
             </div>
             <button
               type="button"

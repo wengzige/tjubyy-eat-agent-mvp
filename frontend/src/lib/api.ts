@@ -71,11 +71,9 @@ export type FeedbackResponse = {
   message: string;
 };
 
-const PROD_API_FALLBACK = "https://chedian-eat-agent-mvp.onrender.com";
-
 function resolveApiBaseUrl(): string {
   const fromEnv = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
-  if (fromEnv) return fromEnv;
+  if (fromEnv) return fromEnv.replace(/\/$/, "");
 
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
@@ -84,14 +82,18 @@ function resolveApiBaseUrl(): string {
     }
   }
 
-  // Safe production fallback when Netlify env var is missing.
-  return PROD_API_FALLBACK;
+  // Production default: same-origin reverse proxy, useful for one-server deployment.
+  return "";
 }
 
 const API_BASE_URL = resolveApiBaseUrl();
 
+function buildUrl(path: string): string {
+  return `${API_BASE_URL}${path}`;
+}
+
 export async function fetchRecommendations(payload: RecommendProxyRequest): Promise<RecommendProxyResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/recommend`, {
+  const res = await fetch(buildUrl("/api/recommend"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -105,7 +107,7 @@ export async function fetchRecommendations(payload: RecommendProxyRequest): Prom
 }
 
 export async function fetchTodayHotRanking(): Promise<HotRankingItem[]> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/rankings/today`, {
+  const res = await fetch(buildUrl("/api/v1/rankings/today"), {
     method: "GET",
   });
 
@@ -119,7 +121,7 @@ export async function fetchTodayHotRanking(): Promise<HotRankingItem[]> {
 
 export async function reportRankingClick(payload: RankingClickPayload): Promise<void> {
   try {
-    await fetch(`${API_BASE_URL}/api/v1/events/ranking-click`, {
+    await fetch(buildUrl("/api/v1/events/ranking-click"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -134,7 +136,7 @@ export async function reportRankingClick(payload: RankingClickPayload): Promise<
 }
 
 export async function submitFeedback(payload: FeedbackPayload): Promise<FeedbackResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/feedback`, {
+  const res = await fetch(buildUrl("/api/feedback"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -151,7 +153,7 @@ export async function submitFeedback(payload: FeedbackPayload): Promise<Feedback
 export async function fetchStoreNameSuggestions(keyword: string): Promise<string[]> {
   const k = keyword.trim();
   if (!k) return [];
-  const res = await fetch(`${API_BASE_URL}/api/stores/suggest?keyword=${encodeURIComponent(k)}`, {
+  const res = await fetch(buildUrl(`/api/stores/suggest?keyword=${encodeURIComponent(k)}`), {
     method: "GET",
   });
   if (!res.ok) return [];

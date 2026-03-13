@@ -1,6 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
+
+import { siteConfig } from "@/lib/siteConfig";
 
 type Props = {
   onSubmit: (query: string) => Promise<void>;
@@ -8,7 +10,7 @@ type Props = {
 };
 
 export default function QueryForm({ onSubmit, loading }: Props) {
-  const [query, setQuery] = useState("预算30，清水河，晚上和同学想吃辣的");
+  const [query, setQuery] = useState(siteConfig.defaultQuery);
 
   return (
     <section className="card">
@@ -17,7 +19,7 @@ export default function QueryForm({ onSubmit, loading }: Props) {
         className="input"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="例如：预算 25，沙河，中午，一个人，想吃清淡点"
+        placeholder={siteConfig.inputPlaceholder}
       />
       <button
         className="button"

@@ -1,9 +1,11 @@
-﻿import "./globals.css";
+import "./globals.css";
 import type { Metadata } from "next";
 
+import { siteConfig } from "@/lib/siteConfig";
+
 export const metadata: Metadata = {
-  title: "成电吃什么 Agent",
-  description: "电子科技大学校园餐饮推荐 MVP",
+  title: `${siteConfig.agentName} Agent`,
+  description: `${siteConfig.schoolName}校园餐饮推荐 MVP`,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

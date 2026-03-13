@@ -9,7 +9,8 @@ from typing import Dict, List
 BASE_DIR = Path(__file__).resolve().parents[2]
 DB_PATH = Path(os.getenv("SQLITE_DB_PATH", str(BASE_DIR / "data" / "chedian.db")))
 SCHEMA_PATH = BASE_DIR / "data" / "schema.sql"
-SEED_CSV_PATH = BASE_DIR / "data" / "shops_mock.csv"
+SEED_CSV_PATH = Path(os.getenv("SHOP_SEED_CSV_PATH", str(BASE_DIR / "data" / "shops_tju_beiyangyuan.csv")))
+SEED_DATASET_ID = os.getenv("SHOP_SEED_DATASET_ID", SEED_CSV_PATH.stem)
 
 _init_lock = Lock()
 _initialized = False
@@ -26,14 +27,39 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(schema_sql)
 
 
-def _seed_from_csv_if_empty(conn: sqlite3.Connection) -> None:
-    row = conn.execute("SELECT COUNT(1) AS cnt FROM shops").fetchone()
-    if row and int(row["cnt"]) > 0:
-        return
+def _ensure_meta_table(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS app_meta (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+        """
+    )
 
+
+def _get_meta(conn: sqlite3.Connection, key: str) -> str | None:
+    row = conn.execute("SELECT value FROM app_meta WHERE key = ?", (key,)).fetchone()
+    if not row:
+        return None
+    return str(row["value"])
+
+
+def _set_meta(conn: sqlite3.Connection, key: str, value: str) -> None:
+    conn.execute(
+        """
+        INSERT INTO app_meta (key, value) VALUES (?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        """,
+        (key, value),
+    )
+
+
+def _seed_from_csv(conn: sqlite3.Connection) -> None:
     with open(SEED_CSV_PATH, "r", encoding="utf-8-sig") as f:
         records = list(csv.DictReader(f))
 
+    conn.execute("DELETE FROM shops")
     conn.executemany(
         """
         INSERT INTO shops (
@@ -56,6 +82,16 @@ def _seed_from_csv_if_empty(conn: sqlite3.Connection) -> None:
             for item in records
         ],
     )
+    _set_meta(conn, "seed_dataset", SEED_DATASET_ID)
+
+
+def _seed_from_csv_if_needed(conn: sqlite3.Connection) -> None:
+    _ensure_meta_table(conn)
+    row = conn.execute("SELECT COUNT(1) AS cnt FROM shops").fetchone()
+    current_seed_dataset = _get_meta(conn, "seed_dataset")
+    if row and int(row["cnt"]) > 0 and current_seed_dataset == SEED_DATASET_ID:
+        return
+    _seed_from_csv(conn)
 
 
 def ensure_database() -> None:
@@ -69,7 +105,7 @@ def ensure_database() -> None:
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
         with _connect() as conn:
             _ensure_schema(conn)
-            _seed_from_csv_if_empty(conn)
+            _seed_from_csv_if_needed(conn)
             conn.commit()
         _initialized = True
 

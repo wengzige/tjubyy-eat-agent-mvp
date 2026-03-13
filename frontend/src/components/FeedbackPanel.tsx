@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -7,6 +7,7 @@ import {
   submitFeedback,
   type FeedbackPayload,
 } from "@/lib/api";
+import { siteConfig } from "@/lib/siteConfig";
 
 const SCENE_OPTIONS = ["一人食", "聚餐", "夜宵", "约会", "赶时间"];
 const TASTE_OPTIONS = ["不辣", "微辣", "清淡", "重口味"];
@@ -164,7 +165,7 @@ export function FeedbackPanel({ showHeader = true }: FeedbackPanelProps) {
       {showHeader && (
         <div className="feedback-head">
           <h2>校园美食共创</h2>
-          <p>你的一次反馈，会让下一位同学吃得更好。</p>
+          <p>{siteConfig.feedbackIntro}</p>
         </div>
       )}
 
@@ -202,17 +203,21 @@ export function FeedbackPanel({ showHeader = true }: FeedbackPanelProps) {
             <input
               value={newStoreForm.storeName}
               onChange={(e) => setNewStoreForm((prev) => ({ ...prev, storeName: e.target.value }))}
-              placeholder="例如：南门砂锅王"
+              placeholder={siteConfig.newStorePlaceholder}
             />
           </label>
           <div className="feedback-grid-2">
             <label>
               区域
-              <input value={newStoreForm.area} onChange={(e) => setNewStoreForm((prev) => ({ ...prev, area: e.target.value }))} placeholder="西门 / 南门 / 校外" />
+              <input
+                value={newStoreForm.area}
+                onChange={(e) => setNewStoreForm((prev) => ({ ...prev, area: e.target.value }))}
+                placeholder={siteConfig.feedbackAreaPlaceholder}
+              />
             </label>
             <label>
               类别
-              <input value={newStoreForm.category} onChange={(e) => setNewStoreForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="面馆 / 盖饭 / 冒菜" />
+              <input value={newStoreForm.category} onChange={(e) => setNewStoreForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="面馆 / 盖饭 / 烧烤" />
             </label>
           </div>
           <label>
@@ -250,7 +255,7 @@ export function FeedbackPanel({ showHeader = true }: FeedbackPanelProps) {
             <input
               value={feedbackForm.storeName}
               onChange={(e) => setFeedbackForm((prev) => ({ ...prev, storeName: e.target.value }))}
-              placeholder="例如：李四面馆"
+              placeholder={siteConfig.diningStorePlaceholder}
               list="feedback-store-suggestions"
             />
             <datalist id="feedback-store-suggestions">
@@ -327,7 +332,7 @@ export function FeedbackPanel({ showHeader = true }: FeedbackPanelProps) {
             <input
               value={feedbackForm.recommendDish}
               onChange={(e) => setFeedbackForm((prev) => ({ ...prev, recommendDish: e.target.value }))}
-              placeholder="例如：番茄牛肉面"
+              placeholder="例如：牛肉面 / 麻辣香锅"
             />
           </label>
           <label>

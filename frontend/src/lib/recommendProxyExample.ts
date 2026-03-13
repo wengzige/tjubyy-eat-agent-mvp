@@ -5,8 +5,14 @@ export type RecommendProxyPayload = {
   history?: Array<{ role: "user" | "assistant"; content: string }>;
 };
 
+function resolveExampleBaseUrl(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+  if (fromEnv) return fromEnv.replace(/\/$/, "");
+  return "http://localhost:8000";
+}
+
 export async function callRecommendProxy(payload: RecommendProxyPayload) {
-  const res = await fetch("http://localhost:8000/api/recommend", {
+  const res = await fetch(`${resolveExampleBaseUrl()}/api/recommend`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

@@ -1,9 +1,9 @@
 ﻿#!/usr/bin/env python3
 """
-成电吃什么 - 腾讯地图 POI 采集脚本
+天大吃什么 - 腾讯地图 POI 采集脚本
 
 用途:
-1. 先解析“电子科技大学清水河校区”中心坐标
+1. 先解析“天津大学北洋园校区”中心坐标
 2. 再按关键词做 nearby POI 搜索
 3. 对商户去重
 4. 输出到 CSV + SQLite
@@ -14,8 +14,8 @@
     python scripts/collect_tencent_poi.py
 
 输出文件:
-    outputs/qingshuihe_restaurants_raw.csv
-    outputs/qingshuihe_restaurants_raw.db
+    outputs/beiyangyuan_restaurants_raw.csv
+    outputs/beiyangyuan_restaurants_raw.db
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ from urllib3.util.retry import Retry
 # =========================
 # Config (easy to edit)
 # =========================
-CAMPUS_NAME = "电子科技大学清水河校区"
+CAMPUS_NAME = "天津大学北洋园校区"
 DEFAULT_RADIUS = 2500
 MAX_PAGES_PER_KEYWORD = 5
 PAGE_SIZE = 20
@@ -62,8 +62,8 @@ KEYWORDS = [
 BASE_URL = "https://apis.map.qq.com/ws/place/v1/search"
 SOURCE_NAME = "tencent_map"
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "outputs"
-CSV_PATH = OUTPUT_DIR / "qingshuihe_restaurants_raw.csv"
-DB_PATH = OUTPUT_DIR / "qingshuihe_restaurants_raw.db"
+CSV_PATH = OUTPUT_DIR / "beiyangyuan_restaurants_raw.csv"
+DB_PATH = OUTPUT_DIR / "beiyangyuan_restaurants_raw.db"
 DB_TABLE = "restaurants_raw"
 ROOT_DIR = Path(__file__).resolve().parent.parent
 ENV_CANDIDATES = [ROOT_DIR / ".env", ROOT_DIR / "backend" / ".env"]
@@ -220,11 +220,11 @@ def pick_campus_center(candidates: List[Dict[str, Any]], campus_name: str) -> Tu
 
 
 def resolve_campus_coordinate(session: requests.Session, campus_name: str, api_key: str) -> Tuple[float, float]:
-    """Resolve campus center using region search in Chengdu."""
+    """Resolve campus center using region search in Tianjin."""
     params = {
         "key": api_key,
         "keyword": campus_name,
-        "boundary": "region(成都,0)",
+        "boundary": "region(天津,0)",
         "page_size": 5,
         "page_index": 1,
     }

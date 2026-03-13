@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS shops (
+CREATE TABLE IF NOT EXISTS shops (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   campus TEXT NOT NULL,
@@ -12,6 +12,11 @@
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS app_meta (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
+
 CREATE TABLE IF NOT EXISTS recommendation_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   raw_query TEXT NOT NULL,
@@ -23,7 +28,7 @@ CREATE TABLE IF NOT EXISTS recommendation_logs (
 
 CREATE TABLE IF NOT EXISTS usage_events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  event_type TEXT NOT NULL, -- query | ranking_click
+  event_type TEXT NOT NULL,
   uid TEXT,
   query_text TEXT,
   shop_id TEXT,
@@ -41,7 +46,7 @@ CREATE INDEX IF NOT EXISTS idx_usage_events_shop_time
 
 CREATE TABLE IF NOT EXISTS feedback_submissions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  feedback_type TEXT NOT NULL, -- new_store | dining_feedback
+  feedback_type TEXT NOT NULL,
   store_name TEXT NOT NULL,
   area TEXT,
   category TEXT,

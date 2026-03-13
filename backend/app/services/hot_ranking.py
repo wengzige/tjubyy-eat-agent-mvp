@@ -1,36 +1,14 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple
 
+from app.core.campus_config import CAMPUS_PROFILE
 from app.models.schemas import HotRankingItem
 from app.services.usage_events import fetch_recent_usage_events
 
-TRACKED_KEYWORDS = [
-    "夜宵",
-    "午饭",
-    "晚饭",
-    "早餐",
-    "一个人",
-    "聚餐",
-    "清淡",
-    "辣",
-    "不辣",
-    "火锅",
-    "烧烤",
-    "面",
-    "盖饭",
-    "饺子",
-    "奶茶",
-    "米线",
-    "冒菜",
-    "快餐",
-    "轻食",
-    "便宜",
-    "性价比",
-    "预算",
-]
+TRACKED_KEYWORDS = list(CAMPUS_PROFILE.hot_keywords)
 
 
 def _parse_event_date(raw: str | None) -> str:
@@ -48,7 +26,7 @@ def _today_and_yesterday() -> Tuple[str, str]:
 
 
 def _fallback_keyword_rank(limit: int) -> List[HotRankingItem]:
-    defaults = ["夜宵", "一个人", "清淡", "聚餐", "性价比"]
+    defaults = ["夜宵", "一人食", "清淡", "聚餐", "性价比"]
     result: List[HotRankingItem] = []
     for rank, kw in enumerate(defaults[:limit], start=1):
         result.append(
@@ -59,7 +37,7 @@ def _fallback_keyword_rank(limit: int) -> List[HotRankingItem]:
                 tag="等待更多搜索数据",
                 campus="",
                 avg_price=0,
-                query=f"清水河附近，{kw}有什么推荐？",
+                query=CAMPUS_PROFILE.hot_query_template.format(location=CAMPUS_PROFILE.primary_campus, keyword=kw),
                 trend="flat",
                 delta=0,
                 today_count=0,
@@ -116,7 +94,7 @@ def get_today_hot_rankings(limit: int = 5) -> List[HotRankingItem]:
                 tag=f"今日提及 {today_count} 次",
                 campus="",
                 avg_price=0,
-                query=sample or f"清水河附近，{kw}有什么推荐？",
+                query=sample or CAMPUS_PROFILE.hot_query_template.format(location=CAMPUS_PROFILE.primary_campus, keyword=kw),
                 trend=trend,
                 delta=delta,
                 today_count=today_count,

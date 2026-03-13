@@ -42,7 +42,6 @@ def test_can_load_json_config_and_affect_ranking(monkeypatch, tmp_path) -> None:
     )
     monkeypatch.setenv("SCORING_CONFIG_PATH", str(cfg))
 
-    slots = parse_query("夜宵想吃辣，清水河，预算30，和朋友一起")
+    slots = parse_query("晚饭想吃辣，北洋园，预算24，和朋友一起")
     top = recommend(slots, top_k=1)[0]
-    # Budget-only strategy should prioritize exact budget fit (30元店铺).
-    assert top.name == "韩式拌饭屋"
+    assert top.name == "北洋园麻辣香锅"

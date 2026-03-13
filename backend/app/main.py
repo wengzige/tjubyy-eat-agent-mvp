@@ -1,4 +1,4 @@
-﻿import os
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -7,29 +7,28 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.proxy_routes import proxy_router
 from app.api.routes import router
+from app.core.campus_config import CAMPUS_PROFILE
 
 # Auto-load backend/.env for local development.
-load_dotenv(dotenv_path=Path(__file__).resolve().parents[1] / '.env', override=False)
+load_dotenv(dotenv_path=Path(__file__).resolve().parents[1] / ".env", override=False)
 
-app = FastAPI(title='成电吃什么 Agent API', version='0.1.0')
+app = FastAPI(title=f"{CAMPUS_PROFILE.assistant_name} API", version="0.2.0")
 
-# Comma-separated list, e.g.
-# CORS_ALLOW_ORIGINS=https://your-site.netlify.app,http://localhost:3000
-raw_origins = os.getenv('CORS_ALLOW_ORIGINS', '').strip()
+raw_origins = os.getenv("CORS_ALLOW_ORIGINS", "").strip()
 if raw_origins:
-    allow_origins = [item.strip() for item in raw_origins.split(',') if item.strip()]
+    allow_origins = [item.strip() for item in raw_origins.split(",") if item.strip()]
 else:
     allow_origins = [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
     ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
     allow_credentials=True,
-    allow_methods=['*'],
-    allow_headers=['*'],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-app.include_router(router, prefix='/api/v1', tags=['mvp'])
-app.include_router(proxy_router, prefix='/api', tags=['workflow-proxy'])
+app.include_router(router, prefix="/api/v1", tags=["mvp"])
+app.include_router(proxy_router, prefix="/api", tags=["tencent-hunyuan-proxy"])

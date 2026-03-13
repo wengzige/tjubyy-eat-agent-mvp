@@ -1,15 +1,13 @@
 import re
 
+from app.core.campus_config import CAMPUS_PROFILE
 from app.models.schemas import ParsedSlots
 
 
-LOCATION_RULES = {
-    "清水河": ("清水河", "清水河校区"),
-    "沙河": ("沙河", "沙河校区"),
-}
+LOCATION_RULES = {location: aliases for location, aliases in CAMPUS_PROFILE.location_aliases.items()}
 
 SCENE_RULES = {
-    "一个人": ("一个人", "单人", "自己吃", "一人食"),
+    "一个人": ("一个人", "一人食", "单人", "自己吃", "赶时间"),
     "同学聚餐": ("室友", "同学", "聚餐", "约饭", "朋友", "多人"),
 }
 
@@ -34,11 +32,13 @@ def _match_rule(text: str, rules: dict[str, tuple[str, ...]]) -> str | None:
 
 
 def parse_query(query: str) -> ParsedSlots:
-    """MVP 规则解析器，后续可替换为 LLM / 讯飞模型。"""
+    """MVP 规则解析器，后续可替换为更复杂的 LLM 或混合检索。"""
     text = query.strip()
 
     budget = None
-    budget_match = re.search(r"(\d{1,3})\s*(以内|以下|元|块)?", text)
+    budget_match = re.search(r"(?:预算|人均|¥|￥)\s*(\d{1,3})", text)
+    if not budget_match:
+        budget_match = re.search(r"(\d{1,3})\s*(?:元|块|以内|以下|左右|上下)", text)
     if budget_match:
         budget = int(budget_match.group(1))
 
