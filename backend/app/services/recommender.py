@@ -36,18 +36,43 @@ def _overlap_minutes(a: Tuple[int, int], b: Tuple[int, int]) -> int:
     return max(0, right - left)
 
 
+def _time_label_score(shop: Dict, slots: ParsedSlots) -> float:
+    if not slots.time:
+        return 0.0
+
+    labels: List[str] = []
+    for field in ("scenes", "tags"):
+        value = shop.get(field, "")
+        if not value:
+            continue
+        labels.extend(item.strip() for item in value.split("|") if item.strip())
+
+    return 1.0 if slots.time in labels else 0.0
+
+
 def _time_match_score(shop: Dict, slots: ParsedSlots, slot_ranges: Dict[str, Tuple[int, int]]) -> float:
-    if not slots.time or slots.time not in slot_ranges or not shop.get("open_hours"):
+    if not slots.time or slots.time not in slot_ranges:
         return 0.0
 
-    shop_range = _parse_open_hours(shop["open_hours"])
     query_range = slot_ranges[slots.time]
-    query_length = query_range[1] - query_range[0]
-    overlap = _overlap_minutes(shop_range, query_range)
-    if overlap == 0:
+    open_hours_score = 0.0
+    if shop.get("open_hours"):
+        shop_range = _parse_open_hours(shop["open_hours"])
+        query_length = query_range[1] - query_range[0]
+        overlap = _overlap_minutes(shop_range, query_range)
+        if overlap > 0:
+            open_hours_score = min(1.0, overlap / query_length)
+
+    label_score = _time_label_score(shop, slots)
+
+    # Prefer shops explicitly tagged for the requested meal slot over generic all-day availability.
+    if label_score > 0:
+        return max(label_score, open_hours_score * 0.75)
+
+    if open_hours_score == 0:
         return 0.0
 
-    return min(1.0, overlap / query_length)
+    return round(open_hours_score * 0.75, 4)
 
 
 def _scene_match_score(shop: Dict, slots: ParsedSlots, scene_aliases: Dict[str, List[str]]) -> float:
@@ -111,7 +136,7 @@ def _score_shop(
         sum(1 for key in ["budget", "location", "taste", "scene", "time"] if components[key] > 0)
     )
 
-    return round(min(score, 0.99), 4), components
+    return round(score, 4), components
 
 
 def _build_reason(shop: Dict, slots: ParsedSlots, components: Dict[str, float], time_match_min: float) -> str:
@@ -167,7 +192,7 @@ def recommend(slots: ParsedSlots, top_k: int = 3) -> List[ShopResult]:
                 campus=shop["campus"],
                 avg_price=int(shop["avg_price"]),
                 tags=shop["tags"].split("|"),
-                score=score,
+                score=round(min(score, 0.99), 4),
                 reason=_build_reason(shop, slots, components, time_match_min),
             )
         )

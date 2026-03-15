@@ -10,6 +10,7 @@ export const siteConfig = {
   schoolName: "天津大学",
   shortSchoolName: "TJU",
   campusLabel: "北洋园 / 卫津路",
+  rankingTriggerLabel: "校园热门榜",
   heroBadgeLabel: "天津大学北洋园校区餐饮信息服务",
   heroSealLabel: "北洋园校区 · 校园生活服务",
   heroSealTitle: "天津大学校园餐饮推荐平台",

@@ -2,6 +2,8 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+.pytest-tmp/
+test-fixture-tmp/
 .mypy_cache/
 .ruff_cache/
 .venv/

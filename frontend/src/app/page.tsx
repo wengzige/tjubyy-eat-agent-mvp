@@ -253,7 +253,7 @@ export default function HomePage() {
                   <button
                     type="button"
                     className="school-badge school-badge-btn"
-                    aria-label={`${siteConfig.schoolName}校徽`}
+                    aria-label={`打开${siteConfig.rankingTriggerLabel}`}
                     aria-expanded={rankingOpen}
                     onClick={() => setRankingOpen((v) => !v)}
                   >
@@ -272,8 +272,7 @@ export default function HomePage() {
                       )}
                     </span>
                     <span className="school-badge-text">
-                      <b>{siteConfig.shortSchoolName}</b>
-                      <em>{siteConfig.schoolName}</em>
+                      <b>{siteConfig.rankingTriggerLabel}</b>
                     </span>
                     <span className={`badge-caret ${rankingOpen ? "open" : ""}`} aria-hidden>
                       ▾

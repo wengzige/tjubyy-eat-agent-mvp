@@ -19,7 +19,7 @@ class CampusProfile:
 
 
 CAMPUS_PROFILE = CampusProfile(
-    assistant_name="天大吃什么",
+    assistant_name="TJUer校园餐饮助手",
     school_name="天津大学",
     short_school_name="TJU",
     primary_campus="北洋园",
